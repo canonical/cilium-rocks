@@ -1,0 +1,324 @@
+name: cilium
+summary: Cilium agent rock for the Cilium CNI.
+description: This rock is a drop in replacement for the cilium/cilium image.
+version: "1.14.5"
+license: Apache-2.0
+
+base: ubuntu@22.04
+build-base: ubuntu@22.04
+platforms:
+  amd64:
+
+environment:
+  HUBBLE_SERVER: "unix:///var/run/cilium/hubble.sock"
+  INITSYSTEM: "SYSTEMD"
+
+services:
+  cilium:
+    command: /usr/bin/cilium
+    override: replace
+    startup: enabled
+
+package-repositories:
+  - type: apt
+    url: http://apt.llvm.org/jammy/
+    suites: ["llvm-toolchain-jammy-15"]
+    components: ["main"]
+    key-id: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
+
+parts:
+  bazelisk:
+    plugin: nil
+    overlay-script: |
+      wget https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-$CRAFT_ARCH_BUILD_FOR
+      mv bazelisk-linux-$CRAFT_ARCH_BUILD_FOR /usr/bin/bazelisk
+      chmod +x /usr/bin/bazelisk
+      ln -sf /usr/bin/bazelisk /usr/bin/bazel
+        
+  cilium-envoy:
+    after: [bazelisk]
+    plugin: make
+    source-type: git
+    source: https://github.com/cilium/proxy.git
+    source-tag: v1.26
+    build-packages:
+      - autoconf
+      - automake
+      - cmake
+      - coreutils
+      - curl
+      - git
+      - libtool
+      - make
+      - ninja-build
+      - patch
+      - patchelf
+      - python3
+      - python-is-python3
+      - unzip
+      - virtualenv
+      - wget
+      - zip
+      - libc6-dev
+      - gcc
+      - binutils
+      - clang-15
+      - clang-tools-15
+      - lldb-15
+      - lld-15
+      - clang-format-15
+      - libc++-15-dev
+      - libc++abi-15-dev
+    override-build: |
+      export PKG_BUILD=1
+      export DESTDIR=$CRAFT_PART_INSTALL
+      make -C proxylib all
+      mkdir -p $CRAFT_PART_INSTALL/usr/lib/
+      cp proxylib/libcilium.so $CRAFT_PART_INSTALL/usr/lib/
+      cp proxylib/libcilium.so /usr/lib/
+      git rev-parse HEAD >SOURCE_VERSION
+      make bazel-bin/cilium-envoy
+      make install
+
+  builder-img-deps:
+    plugin: nil
+    build-packages:
+      - unzip
+      - binutils
+      - coreutils
+      - curl
+      - gcc
+      - git
+      - libc6-dev
+      - make
+
+  build-deps:
+    plugin: nil
+    build-snaps:
+      - go/1.21/stable
+    build-packages:
+      - autoconf
+      - automake
+      - autopoint
+      - autotools-dev
+      - build-essential
+      - pkg-config
+
+  debug-wrapper:
+    after: [build-deps, builder-img-deps]
+    plugin: go
+    source-type: git
+    source: https://github.com/cilium/cilium.git
+    source-tag: v1.14.5
+    source-subdir: images/builder
+    build-environment:
+      - CGO_ENABLED: 0
+    override-build: |
+      cd $CRAFT_PART_SRC_WORK
+      go install github.com/go-delve/delve/cmd/dlv@latest
+      go install -ldflags "-s -w" debug-wrapper.go
+
+  protoc:
+    plugin: cmake
+    source-type: git
+    source: https://github.com/protocolbuffers/protobuf.git
+    source-tag: v24.0
+    source-submodules:
+      - third_party/googletest
+      - third_party/abseil-cpp
+      - third_party/jsoncpp
+    cmake-generator: Ninja
+    build-packages:
+      - g++
+      - git
+    override-build: |
+      cmake $CRAFT_PART_SRC -G Ninja \
+        -DCMAKE_BUILD_TYPE="Release" \
+        -DCMAKE_INSTALL_PREFIX="$CRAFT_PART_INSTALL/usr/local"
+      ninja install
+    stage:
+    - -usr/local/lib
+    - -usr/local/include/absl
+    - -usr/local/include/utf8_range.h
+    - -usr/local/include/utf8_validity.h
+
+  protoplugins:
+    plugin: go
+    source: ""
+    override-build: |
+      # 8ba23be9613c672d40ae261d2a1335d639bdd59b == tag: cmd/protoc-gen-go-grpc/v1.3.0
+      go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@8ba23be9613c672d40ae261d2a1335d639bdd59b
+      go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0
+      go install github.com/mitchellh/protoc-gen-go-json@49905733154f04e47d685de62c2cc2b72613b69e
+      go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1
+
+  runtime-img-deps:
+    plugin: nil
+    stage-packages:
+      - jq
+      - bash-completion
+      - iproute2
+      - ipset
+      - kmod
+      - ca-certificates
+      - libz3-dev
+    stage:
+      - -usr/lib/x86_64-linux-gnu/libmnl.so.0.2.0
+      - -usr/lib/x86_64-linux-gnu/libmnl.so.0
+
+  libmnl:
+    after : [build-deps]
+    plugin: autotools
+    source: https://www.netfilter.org/pub/libmnl/libmnl-1.0.4.tar.bz2
+    autotools-configure-parameters:
+      - "--prefix=/lib"
+      - "--libdir=/lib/x86_64-linux-gnu"
+    prime:
+      - -usr/local/include
+
+  libnftnl:
+    after: [libmnl]
+    plugin: autotools
+    source: https://www.netfilter.org/projects/libnftnl/files/libnftnl-1.2.1.tar.bz2
+    autotools-configure-parameters:
+      - "--prefix=/lib"
+      - "--libdir=/lib/x86_64-linux-gnu"
+    build-environment:
+      - LIBMNL_LIBS: $CRAFT_STAGE/lib/x86_64-linux-gnu
+    prime:
+      - -usr/local/include
+
+  iptables:
+    after: [libnftnl]
+    source: https://www.netfilter.org/projects/iptables/files/iptables-1.8.8.tar.bz2
+    plugin: autotools
+    build-environment:
+      - LIBMNL_LIBS: $CRAFT_STAGE/lib/x86_64-linux-gnu
+      - LIBNFTNL_LIBS: $CRAFT_STAGE/lib/x86_64-linux-gnu
+    autotools-configure-parameters:
+      - "--prefix=/usr"
+      - "--exec-prefix=/"
+      - "--disable-shared"
+      - "--enable-static"
+    stage:
+      - -usr/share
+      - -lib/pkgconfig
+      - -bin/iptables-xml
+    organize:
+      sbin: usr/sbin 
+
+  iptables-wrapper:
+    after: [iptables]
+    plugin: nil
+    source-type: git
+    source: https://github.com/kubernetes-sigs/iptables-wrappers.git
+    source-commit: "e139a115350974aac8a82ec4b815d2845f86997e"
+    override-build: |
+      mv /usr/sbin /usr/sbin-tmp
+      ln -sf $CRAFT_STAGE/usr/sbin /usr/sbin
+      ./iptables-wrapper-installer.sh
+      mkdir -p $CRAFT_PART_INSTALL/usr/sbin
+      cp $CRAFT_STAGE/usr/sbin/iptables-wrapper $CRAFT_PART_INSTALL/usr/sbin/
+      rm -rf /usr/sbin
+      mv /usr/sbin-tmp /usr/sbin
+  
+  bpftool:
+    plugin: make
+    source-type: git
+    source: https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git
+    source-commit: "93270357daa949e4bed375b40d0a100ce04f3399"
+    source-depth: 1
+    source-subdir: "tools/bpf/bpftool"
+    build-packages:
+      - libelf-dev
+    stage-packages:
+      - libelf1
+    organize:
+      usr/local/sbin/bpftool: usr/sbin/bpftool
+  
+  llvm-10-bpf:
+    plugin: cmake
+    source-type: git
+    source: https://github.com/llvm/llvm-project.git
+    source-branch: "llvmorg-10.0.0"
+    source-subdir: "llvm"
+    cmake-generator: Ninja
+    override-pull: |
+      craftctl default
+      git cherry-pick 29bc5dd19407c4d7cad1c059dea26ee216ddc7ca
+      git cherry-pick 13f6c81c5d9a7a34a684363bcaad8eb7c65356fd
+      git cherry-pick ea72b0319d7b0f0c2fcf41d121afa5d031b319d5
+    override-build: |
+      cmake $CRAFT_PART_SRC_WORK -G "Ninja" \
+        -DLLVM_TARGETS_TO_BUILD="BPF" \
+        -DLLVM_ENABLE_PROJECTS="clang" \
+        -DBUILD_SHARED_LIBS="OFF" \
+        -DCMAKE_BUILD_TYPE="Release" \
+        -DLLVM_BUILD_RUNTIME="OFF" \
+        -DCMAKE_INSTALL_PREFIX="/usr/local"
+
+      ninja clang llc llvm-objcopy
+
+      cp -r $CRAFT_PART_BUILD/bin $CRAFT_PART_INSTALL
+    stage:
+      - -bin
+    organize:
+      bin/clang-10: usr/bin/clang
+      bin/llc: usr/bin/llc
+      bin/llvm-objcopy: usr/bin/llvm-objcopy
+
+  gops:
+    after: [build-deps]
+    plugin: go
+    source-type: git
+    source: https://github.com/google/gops.git
+    source-tag: v0.3.27
+    build-environment:
+      - CGO_ENABLED: 0
+    override-build: |
+      go install -ldflags "-s -w" ./...
+
+  cni-plugins:
+    after: [build-deps]
+    plugin: go
+    source-type: git
+    source: https://github.com/containernetworking/plugins.git
+    source-tag: v1.4.0
+    override-build: |
+      ./build_linux.sh
+      cp -r $CRAFT_PART_BUILD/bin $CRAFT_PART_INSTALL
+    stage:
+      - -bin
+    organize:
+      bin/loopback: cni/loopback
+
+  hubble:
+    after: [build-deps]
+    plugin: make
+    source-type: git
+    source: "https://github.com/cilium/hubble.git"
+    source-tag: v0.12.3
+    override-build: |
+      craftctl default
+      mkdir -p $CRAFT_PART_INSTALL/etc/bash_completion.d
+      $CRAFT_PART_INSTALL/usr/local/bin/hubble completion bash > $CRAFT_PART_INSTALL/etc/bash_completion.d/hubble
+  
+  cilium:
+    after: [build-deps, builder-img-deps, llvm-10-bpf]
+    plugin: make
+    source-type: git
+    source: https://github.com/cilium/cilium.git
+    source-tag: v1.14.5
+    build-environment:
+     - DISABLE_ENVOY_INSTALLATION: 1
+    override-build: |
+      make build-container
+      export DESTDIR=$CRAFT_PART_INSTALL
+      make install-container-binary
+      make install-bash-completion
+      make licenses-all
+      
+      cp $CRAFT_PART_BUILD/LICENSE.all  $CRAFT_PART_INSTALL/
+      cp $CRAFT_PART_SRC/images/cilium/init-container.sh $CRAFT_PART_INSTALL/
+      cp $CRAFT_PART_SRC/plugins/cilium-cni/install-plugin.sh $CRAFT_PART_INSTALL/
+      cp $CRAFT_PART_SRC/plugins/cilium-cni/cni-uninstall.sh $CRAFT_PART_INSTALL/
