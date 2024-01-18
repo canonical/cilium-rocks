@@ -1,0 +1,38 @@
+name: Build Rocks
+
+on:
+  workflow_call:
+    inputs:
+      image-build-args:
+        description: |
+          List of build args to pass to the build image job
+        type: string
+        default: ""
+      registry:
+        description: Container Registrying top-level domain
+        type: string
+        default: ghcr.io
+      trivy-image-config:
+        type: string
+        description: Trivy YAML configuration for image testing that is checked in as part of the repo
+      working-directory:
+        type: string
+        description: The working directory for jobs
+        default: "./"
+        
+jobs:
+  get-runner-image:
+    name: Get runner image
+    uses: canonical/operator-workflows/.github/workflows/get_runner_image.yaml@main
+    with:
+      working-directory: ${{ inputs.working-directory }}
+  build-rocks:
+    name: Build rock
+    uses: canonical/operator-workflows/.github/workflows/build_rocks.yaml@main
+    needs: get-runner-image
+    with:
+      owner: ${{ github.repository_owner }}
+      registry: ${{ inputs.registry }}
+      runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
+      trivy-image-config: ${{ inputs.trivy-image-config }}
+      working-directory: ${{ inputs.working-directory }}
