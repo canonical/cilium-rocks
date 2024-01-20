@@ -29,7 +29,7 @@ jobs:
   build-rocks:
     name: Build rocks
     uses: addyess/operator-workflows/.github/workflows/build_rocks.yaml@KU-52-reuse-gh-actions-from-canonical-to-build-amd-64-rocks-and-push-to-ghcr
-    needs: get-runner-image
+    needs: [get-runner-image]
     with:
       owner: ${{ github.repository_owner }}
       registry: ${{ inputs.registry }}
@@ -39,7 +39,7 @@ jobs:
       multiarch-awareness: true
   create-multiarch-manifest:
     name: Create Mulitarch Manifest
-    needs: build-rocks
+    needs: [build-rocks]
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4.1.1
@@ -48,39 +48,49 @@ jobs:
       uses: actions/github-script@v7.0.1
       with:
         script: |
-          const path = require('path')
-          const owner = '${{ github.repository_owner }}'
-          const registry = core.getInput('registry')
-          const workingDir = core.getInput('working-directory')
-          const meta = JSON.parse(`${{ steps.build-rocks.outputs.rock-metas }}`)
+          async function get_containers(org, package_name) {
+            let containers;
+            core.info(`Looking up existing containers ${org}/${package_name}`)
+            try {
+                containers = (await github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
+                    org,
+                    package_type: "container",
+                    package_name,
+                })).data;
+            } catch (e) {
+                containers = [];
+                console.error(e);
+            }
+            return containers
+          }
 
-          const imageManifests = []
+          const path = require('path')
+          const inputs = ${{ toJSON(inputs) }}
+          const registry = inputs.registry
+          const owner = context.repo.owner
+          const metas = JSON.parse(`${{ needs.build-rocks.outputs.rock-metas }}`)
+          const new_metas = []
           for (const meta of metas) {
-            core.info(`loading rockcraft.yaml in ${rockPath}`)
-            const rockcraftFile = path.join([workingDir, meta.path, 'rockcraft.yaml'])
+            core.info(`loading rockcraft.yaml in ${meta.path}`)
+            const rockcraftFile = path.join(meta.path, 'rockcraft.yaml')
             const [rockName, rockVersion] = (
               await exec.getExecOutput('yq', ['.name,.version', rockcraftFile])
             ).stdout.trim().split("\n")
-            const versions = github.rest.packages.getAllPackageVersionsForAPackageOwnedByAnOrg(
-              'container', rockName, owner
-            )
+            const versions = await get_containers(owner, rockName)
             const rockVersion_ = rockVersion + "-ck"
-            var patchRev = 0
-            for (const version of versions) {
-              for (const tag of version.metadata.container.tags) {
-                if (tag.startsWith(rockVersion_)) {
-                  patchRev += 1;
-                }
-              }
-            }
+            const patchRev = versions.reduce((partial, v) => 
+              partial + v.metadata.container.tags.filter(t => t.startsWith(rockVersion_)).length, 0
+            )
+            core.info(`number of containers at ${rockVersion}: ${patchRev}`)
             meta.name = rockName
             meta.version = rockVersion_ + patchRev
             core.info(`Tagging image ${meta.image} with ${meta.version}`)
+            new_metas.push(meta)
           }
-          core.setOutput('rock-metas', JSON.stringify(meta))
+          core.setOutput('rock-metas', JSON.stringify(new_metas))
     - name: Create and Push Manifests
       id: create-and-push-manifest
-      uses: actions/github-script@7.0.1
+      uses: actions/github-script@v7.0.1
       with:
         script: |
           class RockImage {
@@ -143,9 +153,9 @@ jobs:
             console.log(`              > ${command}`)
           }
 
-
           function main() {
-            const registry = core.getInput('registry')
+            const inputs = ${{ toJSON(inputs) }}
+            const registry = inputs.registry
             const owner = '${{ github.repository_owner }}'
             const metas = JSON.parse(`${{ steps.assemble-image-tags.outputs.rock-metas }}`)
             const containers = {}

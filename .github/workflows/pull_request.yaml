@@ -7,4 +7,5 @@ jobs:
     name: Build Rocks
     uses: ./.github/workflows/build_rock.yaml
     with:
+      working-directory: cilium-operator-generic
       trivy-image-config: "trivy.yaml"
