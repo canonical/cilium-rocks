@@ -96,68 +96,59 @@ jobs:
       with:
         script: |
           class RockImage {
-            constructor (rock, arch) {
-              this.rock = rock
+            constructor (image, arch) {
+              this.image = image
               this.arch = arch
             }
-            
-            // import_image = (image) => {
-            //   console.info("    🪨  import image: %s", this.rock)
-            //   run(`docker pull ${this.rock}`)
-            // }
-            
-            annotate = (image) => {
+           
+            async import_image() {
+              console.info(`    ⏬ pull image: ${this.image}`)
+              await exec.exec("docker", ["pull", this.image])
+            }
+
+            async annotate(image) {
               console.info(`    🖌️ annotate manifest: ${image} ${this.arch}`)
-              run(`docker manifest annotate ${image} ${this.rock} --arch=${this.arch}`)
+              await exec.exec("docker", ["manifest", "annotate", image, this.image, `--arch=${this.arch}`])
             }
           }
 
           class RockComponent {
             constructor (name, version) {
-              this.imageName = name
+              this.name = name
               this.version = version
-              this.imageVer = `${this.imageName}:${this.version}`
+              this.imageVer = `${this.name}:${this.version}`
               this.images = []
             }
 
-            create_manifest = (target) => {
-              var archs = this.images.map(i => i.arch)
-              var rocks = this.images.map(i => i.rock)
-              var amends = rocks.map(r => `--amend ${r}`)
+            async create_manifest(target) {
+              const archs = this.images.map(i => i.arch)
+              const rocks = this.images.map(i => i.image)
               console.info(`  📄 create manifest: ${target} ${archs.join(",")}`)
-              run(`docker manifest create ${target} ${amends.join(' ')}`)
+              await exec.exec("docker", ["manifest", "create", target, rocks.join(' ')])
             }
 
-            push_manifest = (target) => {
-              console.info("  ⏫ push manifest: %s", target)
-              run(`echo docker manifest push ${target}`)
+            async push_manifest(target) {
+              console.info(`  ⏫ push manifest: ${target}`)
+              console.info(`docker manifest push ${target}`)
+              await exec.exec("docker", ["manifest", "push", target])
             }
 
-            craft_manifest = (target) => {
-              var targetImage = `${target.trim('/')}/${this.imageVer}`
-              run(`docker manifest rm ${targetImage}`)
-
-              // console.info(`  🏁 Start Rock Uploads: ${this.imageName}` )
-              // for (const image of this.images) {
-              //     image.import_image(targetImage)
-              // }
-
-              this.create_manifest(targetImage)
+            async craft_manifest(target) {
+              for (const image of this.images) {
+                await image.import_image()
+              }
+              const targetImage = `${target.trim('/')}/${this.imageVer}`
+              await exec.exec("docker", ["manifest", "rm", targetImage], {ignoreReturnCode: true})
+              await this.create_manifest(targetImage)
 
               for (const image of this.images) {
-                  image.annotate(targetImage)
+                  await image.annotate(targetImage)
               }
-              this.push_manifest(targetImage)
+              await this.push_manifest(targetImage)
             }
           }
 
-          async function run(command) {
-            const [prog, ...args] = command.split(" ")
-            console.debug(`              > ${command}`)
-            await exec.getExecOutput(prog, args)
-          }
-
-          function main() {
+          async function main() {
             const inputs = ${{ toJSON(inputs) }}
             const registry = inputs.registry
             const owner = '${{ github.repository_owner }}'
@@ -170,9 +161,9 @@ jobs:
               containers[meta.name].images.push(new RockImage(meta.image, meta.arch))
             }
             for (const component of Object.values(containers)) {
-              console.info("🖥️  Assemble Multiarch Image: %s", component.imageName)
-              component.craft_manifest(`${registry}/${owner}`)
+              console.info(`🖥️  Assemble Multiarch Image: ${component.name}`)
+              await component.craft_manifest(`${registry}/${owner}`)
             }
           }
 
-          main()
+          await main()
