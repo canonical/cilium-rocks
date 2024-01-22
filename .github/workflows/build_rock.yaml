@@ -68,26 +68,28 @@ jobs:
           const inputs = ${{ toJSON(inputs) }}
           const registry = inputs.registry
           const owner = context.repo.owner
-          const metas = JSON.parse(`${{ needs.build-rocks.outputs.rock-metas }}`)
-          const new_metas = []
-          for (const meta of metas) {
-            core.info(`loading rockcraft.yaml in ${meta.path}`)
-            const rockcraftFile = path.join(meta.path, 'rockcraft.yaml')
-            const [rockName, rockVersion] = (
-              await exec.getExecOutput('yq', ['.name,.version', rockcraftFile])
-            ).stdout.trim().split("\n")
-            const versions = await get_containers(owner, rockName)
-            const rockVersion_ = rockVersion + "-ck"
-            const patchRev = versions.reduce((partial, v) => 
-              partial + v.metadata.container.tags.filter(t => t.startsWith(rockVersion_)).length, 0
+          const metas = await Promise.all(
+            JSON.parse(`${{ needs.build-rocks.outputs.rock-metas }}`).map(
+              async meta => {
+                const versions = await get_containers(owner, meta.name)
+                const rockVersion_ = meta.version + "-ck"
+                const patchRev = versions.reduce((partial, v) =>
+                  partial + v.metadata.container.tags.filter(t => t.startsWith(rockVersion_)).length, 0
+                )
+                core.info(`Number of containers tagged ${owner}/${meta.name}/${meta.version}: ${patchRev}`)
+                meta.version = rockVersion_ + patchRev
+                core.info(`Tagging image ${meta.image} with ${meta.version}`)
+                return meta
+              }
             )
-            core.info(`number of containers at ${rockVersion}: ${patchRev}`)
-            meta.name = rockName
-            meta.version = rockVersion_ + patchRev
-            core.info(`Tagging image ${meta.image} with ${meta.version}`)
-            new_metas.push(meta)
-          }
-          core.setOutput('rock-metas', JSON.stringify(new_metas))
+          )
+          core.setOutput('rock-metas', JSON.stringify(metas))
+    - name: Login to Container Registry
+      uses: docker/login-action@v3.0.0
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Create and Push Manifests
       id: create-and-push-manifest
       uses: actions/github-script@v7.0.1
@@ -99,14 +101,14 @@ jobs:
               this.arch = arch
             }
             
-            import_image = (image) => {
-              console.log("    🪨  import image: %s", this.rock)
-              runner(`docker pull ${this.rock}`)
-            }
+            // import_image = (image) => {
+            //   console.info("    🪨  import image: %s", this.rock)
+            //   run(`docker pull ${this.rock}`)
+            // }
             
             annotate = (image) => {
               console.info(`    🖌️ annotate manifest: ${image} ${this.arch}`)
-              runner(`docker manifest annotate ${image} ${this.rock} --arch=${this.arch}`)
+              run(`docker manifest annotate ${image} ${this.rock} --arch=${this.arch}`)
             }
           }
 
@@ -122,23 +124,23 @@ jobs:
               var archs = this.images.map(i => i.arch)
               var rocks = this.images.map(i => i.rock)
               var amends = rocks.map(r => `--amend ${r}`)
-              console.log(`  📄 create manifest: ${target} ${archs.join(",")}`)
-              runner(`docker manifest create ${target} ${amends.join(' ')}`)
+              console.info(`  📄 create manifest: ${target} ${archs.join(",")}`)
+              run(`docker manifest create ${target} ${amends.join(' ')}`)
             }
 
             push_manifest = (target) => {
-              console.log("  ⏫ push manifest: %s", target)
-              runner(`docker manifest push ${target}`)
+              console.info("  ⏫ push manifest: %s", target)
+              run(`echo docker manifest push ${target}`)
             }
 
             craft_manifest = (target) => {
               var targetImage = `${target.trim('/')}/${this.imageVer}`
-              runner(`docker manifest rm ${targetImage}`)
+              run(`docker manifest rm ${targetImage}`)
 
-              console.log(`  🏁 Start Rock Uploads: ${this.imageName}` )
-              for (const image of this.images) {
-                  image.import_image(targetImage)
-              }
+              // console.info(`  🏁 Start Rock Uploads: ${this.imageName}` )
+              // for (const image of this.images) {
+              //     image.import_image(targetImage)
+              // }
 
               this.create_manifest(targetImage)
 
@@ -149,8 +151,10 @@ jobs:
             }
           }
 
-          function runner(command) {
-            console.log(`              > ${command}`)
+          async function run(command) {
+            const [prog, ...args] = command.split(" ")
+            console.debug(`              > ${command}`)
+            await exec.getExecOutput(prog, args)
           }
 
           function main() {
@@ -166,7 +170,7 @@ jobs:
               containers[meta.name].images.push(new RockImage(meta.image, meta.arch))
             }
             for (const component of Object.values(containers)) {
-              console.log("🖥️  Assemble Multiarch Image: %s", component.imageName)
+              console.info("🖥️  Assemble Multiarch Image: %s", component.imageName)
               component.craft_manifest(`${registry}/${owner}`)
             }
           }
