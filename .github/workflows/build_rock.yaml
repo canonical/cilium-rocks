@@ -106,9 +106,9 @@ jobs:
               await exec.exec("docker", ["pull", this.image])
             }
 
-            async annotate(image) {
-              console.info(`    🖌️ annotate manifest: ${image} ${this.arch}`)
-              await exec.exec("docker", ["manifest", "annotate", image, this.image, `--arch=${this.arch}`])
+            async annotate(target) {
+              console.info(`    🖌️ annotate manifest: ${target} ${this.arch}`)
+              await exec.exec("docker", ["manifest", "annotate", target, this.image, `--arch=${this.arch}`])
             }
           }
 
@@ -122,9 +122,9 @@ jobs:
 
             async create_manifest(target) {
               const archs = this.images.map(i => i.arch)
-              const rocks = this.images.map(i => i.image)
+              const images = this.images.map(i => i.image)
               console.info(`  📄 create manifest: ${target} ${archs.join(",")}`)
-              await exec.exec("docker", ["manifest", "create", target, rocks.join(' ')])
+              await exec.exec("docker", ["manifest", "create", target, images.join(' ')])
             }
 
             async push_manifest(target) {
@@ -142,7 +142,7 @@ jobs:
               await this.create_manifest(targetImage)
 
               for (const image of this.images) {
-                  await image.annotate(targetImage)
+                await image.annotate(targetImage)
               }
               await this.push_manifest(targetImage)
             }
