@@ -1,6 +1,11 @@
 name: Build Multiarch Images
 on:
   pull_request:
+    types:
+      - opened
+      - synchronized
+      - reopened
+      - closed
     branches:
       - main
 
