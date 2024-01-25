@@ -2,9 +2,11 @@ name: Build Multiarch Images
 on:
   pull_request:
     types:
+      # Default Pull Request Types
       - opened
       - synchronized
       - reopened
+      # Respond to closed event to handle merges
       - closed
     branches:
       - main
