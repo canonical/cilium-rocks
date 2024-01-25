@@ -3,43 +3,22 @@ name: Build Rocks
 on:
   workflow_call:
     inputs:
-      image-build-args:
-        description: |
-          List of build args to pass to the build image job
+      rock-metas:
+        description: List of maps featuring the built {name, version, path, arch, image}
         type: string
-        default: ""
+        default: "[]"
       registry:
         description: Container Registrying top-level domain
         type: string
         default: ghcr.io
-      trivy-image-config:
+      dry-run:
+        description: Don't actually push the manifest, just print what would be pushed
         type: string
-        description: Trivy YAML configuration for image testing that is checked in as part of the repo
-      working-directory:
-        type: string
-        description: The working directory for jobs
-        default: "./"
+        default: true
         
 jobs:
-  get-runner-image:
-    name: Get runner image
-    uses: canonical/operator-workflows/.github/workflows/get_runner_image.yaml@main
-    with:
-      working-directory: ${{ inputs.working-directory }}
-  build-rocks:
-    name: Build rocks
-    uses: addyess/operator-workflows/.github/workflows/build_rocks.yaml@KU-52-reuse-gh-actions-from-canonical-to-build-amd-64-rocks-and-push-to-ghcr
-    needs: [get-runner-image]
-    with:
-      owner: ${{ github.repository_owner }}
-      registry: ${{ inputs.registry }}
-      runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
-      trivy-image-config: ${{ inputs.trivy-image-config }}
-      working-directory: ${{ inputs.working-directory }}
-      multiarch-awareness: true
   create-multiarch-manifest:
     name: Create Mulitarch Manifest
-    needs: [build-rocks]
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4.1.1
@@ -53,7 +32,7 @@ jobs:
       uses: actions/github-script@v7.0.1
       with:
         script: |
-          const rockMetas = JSON.parse(`${{ needs.build-rocks.outputs.rock-metas }}`)
+          const rockMetas = JSON.parse(`${{ inputs.rock-metas }}`)
           ${{ steps.assemble-image-tags-js.outputs.content }}
           await main(rockMetas)
     - name: Login to Container Registry
@@ -72,7 +51,8 @@ jobs:
       uses: actions/github-script@v7.0.1
       with:
         script: |
-          const inputs = ${{ toJSON(inputs) }}
+          const registry = '${{ inputs.registry }}'
+          const dryRun = ${{ inputs.dry-run }}
           const rockMetas = JSON.parse(`${{ steps.assemble-image-tags.outputs.rock-metas }}`)
           ${{ steps.create-and-push-manifest-js.outputs.content }}
-          await main(inputs, rockMetas)
+          await main(rockMetas, registry, dryRun)

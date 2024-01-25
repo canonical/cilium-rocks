@@ -16,9 +16,10 @@ class RockImage {
 }
 
 class RockComponent {
-    constructor (name, version) {
+    constructor (name, version, dryRun) {
         this.name = name
         this.version = version
+        this.dryRun = dryRun
         this.imageVer = `${this.name}:${this.version}`
         this.images = []
     }
@@ -33,7 +34,11 @@ class RockComponent {
     async push_manifest(target) {
         console.info(`  ⏫ push manifest: ${target}`)
         console.info(`docker manifest push ${target}`)
-        await exec.exec("docker", ["manifest", "push", target])
+        if (this.dryRun != true ){
+            await exec.exec("docker", ["manifest", "push", target])
+        } else {
+            console.info(`Not pushing manifest ${target} -- because dryRun: ${this.dryRun}`)
+        }
     }
 
     async craft_manifest(target) {
@@ -51,14 +56,13 @@ class RockComponent {
     }
 }
 
-async function main(inputs, rockMetas) {
-    const registry = inputs.registry
+async function main(rockMetas, registry, dryRun) {
     const owner = context.repo.owner
     const metas = rockMetas
     const containers = {}
     for (const meta of metas) {
         if (!containers.hasOwnProperty(meta.name)) {
-            containers[meta.name] = new RockComponent(meta.name, meta.version)
+            containers[meta.name] = new RockComponent(meta.name, meta.version, dryRun)
         }
         containers[meta.name].images.push(new RockImage(meta.image, meta.arch))
     }

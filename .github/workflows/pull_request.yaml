@@ -1,10 +1,32 @@
-name: Pull Request
+name: Build Multiarch Images
 on:
   pull_request:
+    branches:
+      - main
 
 jobs:
-  build-rocks:
-    name: Build Rocks
-    uses: ./.github/workflows/build_rock.yaml
+  get-runner-image:
+    name: Get runner image
+    uses: canonical/operator-workflows/.github/workflows/get_runner_image.yaml@main
     with:
+      working-directory: ${{ inputs.working-directory }}
+  build-and-push-arch-specifics:
+    name: Push Arch Specific Images
+    uses: ./.github/workflows/build_rocks.yaml
+    needs: [get-runner-image]
+    with:
+      owner: ${{ github.repository_owner }}
+      registry: ghcr.io
+      runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
       trivy-image-config: "trivy.yaml"
+      working-directory: ${{ inputs.working-directory }}
+      multiarch-awareness: true
+      cache-action: ${{ github.event.pull_request.merged && 'restore' || 'save' }}
+  build-and-push-multiarch-manifest:
+    name: Push Multiarch Manifest
+    uses: ./.github/workflows/assemble_multiarch_image.yaml
+    needs: [build-and-push-arch-specifics]
+    with:
+      rock-metas: ${{ needs.build-and-push-arch-specifics.outputs.rock-metas }}
+      registry: ghcr.io
+      dry-run: ${{ ! github.event.pull_request.merged }}

@@ -1,17 +1,19 @@
-async function get_containers(org, package_name) {
-    let containers;
-    core.info(`Looking up existing containers ${org}/${package_name}`)
+async function get_by_assoc(assoc, package_name, type, method) {
+    let containers
     try {
-        containers = (await github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
-            org,
-            package_type: "container",
-            package_name,
-        })).data;
+        core.info(`Looking up existing containers by ${type} ${assoc}/${package_name}`)
+        containers = (await method({[type]: assoc, package_type: "container", package_name})).data;
     } catch (e) {
         containers = [];
         console.error(e);
     }
     return containers
+}
+
+async function get_containers(assoc, package_name) {
+    let by_org = await get_by_assoc(assoc, package_name, "org", github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg)
+    let by_user = await get_by_assoc(assoc, package_name, "username", github.rest.packages.getAllPackageVersionsForPackageOwnedByUser)
+    return by_org.concat(by_user)
 }
 
 async function main(rockMetas){
