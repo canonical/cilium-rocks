@@ -1,4 +1,4 @@
-name: Push Multiarch Images
+name: Push Multiarch Image
 on:
   pull_request:
   push:
@@ -6,28 +6,18 @@ on:
       - main
 
 jobs:
-  get-runner-image:
-    name: Get runner image
-    uses: canonical/operator-workflows/.github/workflows/get_runner_image.yaml@main
-    with:
-      working-directory: ${{ inputs.working-directory }}
   build-and-push-arch-specifics:
-    name: Push Arch Specific Images
-    uses: ./.github/workflows/build_rocks.yaml
-    needs: [get-runner-image]
+    name: Build Rocks and Push Arch Specific Images
+    uses: canonical/k8s-workflows/.github/workflows/build_rocks.yaml@main
     with:
       owner: ${{ github.repository_owner }}
-      registry: ghcr.io
-      runs-on: ${{ needs.get-runner-image.outputs.runs-on }}
       trivy-image-config: "trivy.yaml"
-      working-directory: ${{ inputs.working-directory }}
       multiarch-awareness: true
       cache-action: ${{ (github.event_name == 'push') && 'save' || 'restore' }}
   build-and-push-multiarch-manifest:
-    name: Push Multiarch Manifest
-    uses: ./.github/workflows/assemble_multiarch_image.yaml
+    name: Combine Rocks and Push Multiarch Manifest
+    uses: canonical/k8s-workflows/.github/workflows/assemble_multiarch_image.yaml@main
     needs: [build-and-push-arch-specifics]
     with:
       rock-metas: ${{ needs.build-and-push-arch-specifics.outputs.rock-metas }}
-      registry: ghcr.io
       dry-run: ${{ github.event_name != 'push' }}
