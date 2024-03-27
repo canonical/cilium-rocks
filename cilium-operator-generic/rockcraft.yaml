@@ -1,7 +1,7 @@
 name: cilium-operator-generic
 summary: Cilium operator rock for the Cilium CNI.
 description: This rock is a drop in replacement for the cilium/operator-generic image.
-version: "1.14.5"
+version: "1.15.2"
 license: Apache-2.0
 
 base: bare
@@ -48,7 +48,7 @@ parts:
     plugin: go
     source-type: git
     source: https://github.com/cilium/cilium.git
-    source-tag: v1.14.5
+    source-tag: v1.15.2
     source-subdir: images/builder
     build-environment:
       - CGO_ENABLED: 0
@@ -112,12 +112,12 @@ parts:
     plugin: make
     source-type: git
     source: https://github.com/cilium/cilium.git
-    source-tag: v1.14.5
+    source-tag: v1.15.2
     override-build: |
       export VARIANT="generic"
       make build-container-operator-$VARIANT
       export DESTDIR=$CRAFT_PART_INSTALL
       make install-container-binary-operator-$VARIANT
       make licenses-all
-      
+
       cp $CRAFT_PART_BUILD/LICENSE.all  $CRAFT_PART_INSTALL/

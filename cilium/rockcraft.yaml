@@ -1,7 +1,7 @@
 name: cilium
 summary: Cilium agent rock for the Cilium CNI.
 description: This rock is a drop in replacement for the cilium/cilium image.
-version: "1.14.5"
+version: "1.15.2"
 license: Apache-2.0
 
 base: ubuntu@22.04
@@ -15,7 +15,7 @@ environment:
 
 services:
   cilium:
-    command: /usr/bin/cilium
+    command: /usr/bin/cilium-dbg
     override: replace
     startup: enabled
 
@@ -34,13 +34,13 @@ parts:
       mv bazelisk-linux-$CRAFT_ARCH_BUILD_FOR /usr/bin/bazelisk
       chmod +x /usr/bin/bazelisk
       ln -sf /usr/bin/bazelisk /usr/bin/bazel
-        
+
   cilium-envoy:
     after: [bazelisk]
     plugin: make
     source-type: git
     source: https://github.com/cilium/proxy.git
-    source-tag: v1.26
+    source-tag: v1.27
     build-packages:
       - autoconf
       - automake
@@ -72,6 +72,8 @@ parts:
     override-build: |
       export PKG_BUILD=1
       export DESTDIR=$CRAFT_PART_INSTALL
+      # Workaround for bazel python plugin/bits to ignore running as root
+      sed -i -e 's/envoy_dependencies_extra()/envoy_dependencies_extra(ignore_root_user_error=True)/g' WORKSPACE
       make -C proxylib all
       mkdir -p $CRAFT_PART_INSTALL/usr/lib/
       cp proxylib/libcilium.so $CRAFT_PART_INSTALL/usr/lib/
@@ -109,7 +111,7 @@ parts:
     plugin: go
     source-type: git
     source: https://github.com/cilium/cilium.git
-    source-tag: v1.14.5
+    source-tag: v1.15.2
     source-subdir: images/builder
     build-environment:
       - CGO_ENABLED: 0
@@ -205,7 +207,7 @@ parts:
       - -lib/pkgconfig
       - -bin/iptables-xml
     organize:
-      sbin: usr/sbin 
+      sbin: usr/sbin
 
   iptables-wrapper:
     after: [iptables]
@@ -221,7 +223,7 @@ parts:
       cp $CRAFT_STAGE/usr/sbin/iptables-wrapper $CRAFT_PART_INSTALL/usr/sbin/
       rm -rf /usr/sbin
       mv /usr/sbin-tmp /usr/sbin
-  
+
   bpftool:
     plugin: make
     source-type: git
@@ -235,7 +237,7 @@ parts:
       - libelf1
     organize:
       usr/local/sbin/bpftool: usr/sbin/bpftool
-  
+
   llvm-10-bpf:
     plugin: cmake
     source-type: git
@@ -297,18 +299,18 @@ parts:
     plugin: make
     source-type: git
     source: "https://github.com/cilium/hubble.git"
-    source-tag: v0.12.3
+    source-tag: v0.13.2
     override-build: |
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/etc/bash_completion.d
       $CRAFT_PART_INSTALL/usr/local/bin/hubble completion bash > $CRAFT_PART_INSTALL/etc/bash_completion.d/hubble
-  
+
   cilium:
     after: [build-deps, builder-img-deps, llvm-10-bpf]
     plugin: make
     source-type: git
     source: https://github.com/cilium/cilium.git
-    source-tag: v1.14.5
+    source-tag: v1.15.2
     build-environment:
      - DISABLE_ENVOY_INSTALLATION: 1
     override-build: |
@@ -317,7 +319,7 @@ parts:
       make install-container-binary
       make install-bash-completion
       make licenses-all
-      
+
       cp $CRAFT_PART_BUILD/LICENSE.all  $CRAFT_PART_INSTALL/
       cp $CRAFT_PART_SRC/images/cilium/init-container.sh $CRAFT_PART_INSTALL/
       cp $CRAFT_PART_SRC/plugins/cilium-cni/install-plugin.sh $CRAFT_PART_INSTALL/
