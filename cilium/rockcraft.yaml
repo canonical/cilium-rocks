@@ -25,10 +25,17 @@ package-repositories:
     suites: ["llvm-toolchain-jammy-15"]
     components: ["main"]
     key-id: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
+  - type: apt
+    url: http://apt.llvm.org/focal/
+    suites: ["llvm-toolchain-focal-10"]
+    components: ["main"]
+    key-id: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
 
 parts:
   bazelisk:
     plugin: nil
+    build-packages:
+      - wget
     overlay-script: |
       wget https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-$CRAFT_ARCH_BUILD_FOR
       mv bazelisk-linux-$CRAFT_ARCH_BUILD_FOR /usr/bin/bazelisk
@@ -41,6 +48,7 @@ parts:
     source-type: git
     source: https://github.com/cilium/proxy.git
     source-tag: v1.27
+    source-depth: 1
     build-packages:
       - autoconf
       - automake
@@ -81,6 +89,9 @@ parts:
       git rev-parse HEAD >SOURCE_VERSION
       make bazel-bin/cilium-envoy
       make install
+    override-prime: |
+      craftctl default
+      rm -rf /root/.cache/bazel
 
   builder-img-deps:
     plugin: nil
@@ -112,6 +123,7 @@ parts:
     source-type: git
     source: https://github.com/cilium/cilium.git
     source-tag: v1.15.2
+    source-depth: 1
     source-subdir: images/builder
     build-environment:
       - CGO_ENABLED: 0
@@ -125,6 +137,7 @@ parts:
     source-type: git
     source: https://github.com/protocolbuffers/protobuf.git
     source-tag: v24.0
+    source-depth: 1
     source-submodules:
       - third_party/googletest
       - third_party/abseil-cpp
@@ -215,6 +228,7 @@ parts:
     source-type: git
     source: https://github.com/kubernetes-sigs/iptables-wrappers.git
     source-commit: "e139a115350974aac8a82ec4b815d2845f86997e"
+    source-depth: 1
     override-build: |
       mv /usr/sbin /usr/sbin-tmp
       ln -sf $CRAFT_STAGE/usr/sbin /usr/sbin
@@ -227,47 +241,28 @@ parts:
   bpftool:
     plugin: make
     source-type: git
-    source: https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git
-    source-commit: "93270357daa949e4bed375b40d0a100ce04f3399"
+    source: https://github.com/libbpf/bpftool.git
+    source-tag: v7.0.0
     source-depth: 1
-    source-subdir: "tools/bpf/bpftool"
+    source-subdir: src
+    source-submodules:
+      - "libbpf"
     build-packages:
+      - zlib1g-dev
       - libelf-dev
-    stage-packages:
-      - libelf1
-    organize:
-      usr/local/sbin/bpftool: usr/sbin/bpftool
-
-  llvm-10-bpf:
-    plugin: cmake
-    source-type: git
-    source: https://github.com/llvm/llvm-project.git
-    source-branch: "llvmorg-10.0.0"
-    source-subdir: "llvm"
-    cmake-generator: Ninja
-    override-pull: |
-      craftctl default
-      git cherry-pick 29bc5dd19407c4d7cad1c059dea26ee216ddc7ca
-      git cherry-pick 13f6c81c5d9a7a34a684363bcaad8eb7c65356fd
-      git cherry-pick ea72b0319d7b0f0c2fcf41d121afa5d031b319d5
-    override-build: |
-      cmake $CRAFT_PART_SRC_WORK -G "Ninja" \
-        -DLLVM_TARGETS_TO_BUILD="BPF" \
-        -DLLVM_ENABLE_PROJECTS="clang" \
-        -DBUILD_SHARED_LIBS="OFF" \
-        -DCMAKE_BUILD_TYPE="Release" \
-        -DLLVM_BUILD_RUNTIME="OFF" \
-        -DCMAKE_INSTALL_PREFIX="/usr/local"
-
-      ninja clang llc llvm-objcopy
-
-      cp -r $CRAFT_PART_BUILD/bin $CRAFT_PART_INSTALL
-    stage:
-      - -bin
-    organize:
-      bin/clang-10: usr/bin/clang
-      bin/llc: usr/bin/llc
-      bin/llvm-objcopy: usr/bin/llvm-objcopy
+      - libiberty-dev
+      - llvm-15
+      - clang-15
+      - clang-tools-15
+      - lldb-15
+      - lld-15
+      - clang-format-15
+      - libc++-15-dev
+      - libc++abi-15-dev
+    build-environment:
+      - EXTRA_CFLAGS: --static
+      - LLVM_CONFIG: "/usr/bin/llvm-config-15"
+      - LLVM_STRIP: "/usr/bin/llvm-strip-15"
 
   gops:
     after: [build-deps]
@@ -275,6 +270,7 @@ parts:
     source-type: git
     source: https://github.com/google/gops.git
     source-tag: v0.3.27
+    source-depth: 1
     build-environment:
       - CGO_ENABLED: 0
     override-build: |
@@ -286,6 +282,7 @@ parts:
     source-type: git
     source: https://github.com/containernetworking/plugins.git
     source-tag: v1.4.0
+    source-depth: 1
     override-build: |
       ./build_linux.sh
       cp -r $CRAFT_PART_BUILD/bin $CRAFT_PART_INSTALL
@@ -300,17 +297,25 @@ parts:
     source-type: git
     source: "https://github.com/cilium/hubble.git"
     source-tag: v0.13.2
+    source-depth: 1
     override-build: |
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/etc/bash_completion.d
       $CRAFT_PART_INSTALL/usr/local/bin/hubble completion bash > $CRAFT_PART_INSTALL/etc/bash_completion.d/hubble
 
   cilium:
-    after: [build-deps, builder-img-deps, llvm-10-bpf]
+    after: [build-deps, builder-img-deps]
     plugin: make
     source-type: git
     source: https://github.com/cilium/cilium.git
     source-tag: v1.15.2
+    source-depth: 1
+    build-packages:
+      - clang-10
+      - llvm-10
+    stage-packages:
+      - clang-10
+      - llvm-10
     build-environment:
      - DISABLE_ENVOY_INSTALLATION: 1
     override-build: |
@@ -324,3 +329,10 @@ parts:
       cp $CRAFT_PART_SRC/images/cilium/init-container.sh $CRAFT_PART_INSTALL/
       cp $CRAFT_PART_SRC/plugins/cilium-cni/install-plugin.sh $CRAFT_PART_INSTALL/
       cp $CRAFT_PART_SRC/plugins/cilium-cni/cni-uninstall.sh $CRAFT_PART_INSTALL/
+
+      cp -a $CRAFT_PART_INSTALL/usr/bin/clang-10 $CRAFT_PART_INSTALL/usr/bin/clang
+      cp -a $CRAFT_PART_INSTALL/usr/bin/llc-10 $CRAFT_PART_INSTALL/usr/bin/llc
+      cp -a $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy-10 $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy
+    override-prime: |
+      craftctl default
+      rm -rf /root/.cache/go-build
