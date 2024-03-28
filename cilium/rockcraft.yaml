@@ -89,8 +89,6 @@ parts:
       git rev-parse HEAD >SOURCE_VERSION
       make bazel-bin/cilium-envoy
       make install
-    override-prime: |
-      craftctl default
       rm -rf /root/.cache/bazel
 
   builder-img-deps:
