@@ -8,7 +8,7 @@ on:
 jobs:
   build-and-push-arch-specifics:
     name: Build Rocks and Push Arch Specific Images
-    uses: ./dev/workflow.yaml@dev/multi-arch
+    uses: ./test_workflow.yml
     with:
       owner: ${{ github.repository_owner }}
       trivy-image-config: "trivy.yaml"
