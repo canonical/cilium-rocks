@@ -8,13 +8,14 @@ on:
 jobs:
   build-and-push-arch-specifics:
     name: Build Rocks and Push Arch Specific Images
-    uses: canonical/k8s-workflows/.github/workflows/build_rocks.yaml@main
+    uses: ./dev/workflow.yaml
     with:
       owner: ${{ github.repository_owner }}
       trivy-image-config: "trivy.yaml"
       multiarch-awareness: true
       cache-action: ${{ (github.event_name == 'push') && 'save' || 'restore' }}
       platform-labels: '{"arm64": "Ubuntu_ARM64_4C_16G_01"}'
+      maximize-build-space: false
   scan-images:
     uses: canonical/k8s-workflows/.github/workflows/scan_images.yaml@main
     needs: [build-and-push-arch-specifics]
