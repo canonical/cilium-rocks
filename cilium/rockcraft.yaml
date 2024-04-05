@@ -323,9 +323,11 @@ parts:
       make install-bash-completion
       make licenses-all
 
+      echo 'install_cni "/usr/bin/cilium-dbg"' >> $CRAFT_PART_BUILD/plugins/cilium-cni/install-plugin.sh
+
       cp $CRAFT_PART_BUILD/LICENSE.all  $CRAFT_PART_INSTALL/
       cp $CRAFT_PART_SRC/images/cilium/init-container.sh $CRAFT_PART_INSTALL/
-      cp $CRAFT_PART_SRC/plugins/cilium-cni/install-plugin.sh $CRAFT_PART_INSTALL/
+      cp $CRAFT_PART_BUILD/plugins/cilium-cni/install-plugin.sh $CRAFT_PART_INSTALL/
       cp $CRAFT_PART_SRC/plugins/cilium-cni/cni-uninstall.sh $CRAFT_PART_INSTALL/
 
       cp -a $CRAFT_PART_INSTALL/usr/bin/clang-10 $CRAFT_PART_INSTALL/usr/bin/clang
