@@ -8,6 +8,7 @@ base: ubuntu@22.04
 build-base: ubuntu@22.04
 platforms:
   amd64:
+  arm64:
 
 environment:
   HUBBLE_SERVER: "unix:///var/run/cilium/hubble.sock"
@@ -18,18 +19,6 @@ services:
     command: /usr/bin/cilium-dbg
     override: replace
     startup: enabled
-
-package-repositories:
-  - type: apt
-    url: http://apt.llvm.org/jammy/
-    suites: ["llvm-toolchain-jammy-15"]
-    components: ["main"]
-    key-id: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
-  - type: apt
-    url: http://apt.llvm.org/focal/
-    suites: ["llvm-toolchain-focal-10"]
-    components: ["main"]
-    key-id: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
 
 parts:
   bazelisk:
@@ -307,16 +296,20 @@ parts:
     source-type: git
     source: https://github.com/cilium/cilium.git
     source-tag: v1.15.2
-    source-depth: 1
     build-packages:
-      - clang-10
-      - llvm-10
+      - clang-15
+      - llvm-15
     stage-packages:
-      - clang-10
-      - llvm-10
+      - clang-15
+      - llvm-15
     build-environment:
      - DISABLE_ENVOY_INSTALLATION: 1
+     - PKG_BUILD: 1
+     - NOSTRIP: 0
+     - NOOPT: 0
     override-build: |
+      # Cherry picking new debug symbols introduced in newer LLVM versions to ignore list
+      git cherry-pick b91046955d6ba6e335d8b71037e0a5154a09d064 --strategy-option theirs
       make build-container
       export DESTDIR=$CRAFT_PART_INSTALL
       make install-container-binary
@@ -330,9 +323,9 @@ parts:
       cp $CRAFT_PART_BUILD/plugins/cilium-cni/install-plugin.sh $CRAFT_PART_INSTALL/
       cp $CRAFT_PART_SRC/plugins/cilium-cni/cni-uninstall.sh $CRAFT_PART_INSTALL/
 
-      cp -a $CRAFT_PART_INSTALL/usr/bin/clang-10 $CRAFT_PART_INSTALL/usr/bin/clang
-      cp -a $CRAFT_PART_INSTALL/usr/bin/llc-10 $CRAFT_PART_INSTALL/usr/bin/llc
-      cp -a $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy-10 $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy
+      cp -a $CRAFT_PART_INSTALL/usr/bin/clang-15 $CRAFT_PART_INSTALL/usr/bin/clang
+      cp -a $CRAFT_PART_INSTALL/usr/bin/llc-15 $CRAFT_PART_INSTALL/usr/bin/llc
+      cp -a $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy-15 $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy
     override-prime: |
       craftctl default
       rm -rf /root/.cache/go-build
