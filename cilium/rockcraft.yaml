@@ -167,14 +167,13 @@ parts:
     stage:
       - -usr/lib/x86_64-linux-gnu/libmnl.so.0.2.0
       - -usr/lib/x86_64-linux-gnu/libmnl.so.0
+      - -usr/lib/aarch64-linux-gnu/libmnl.so.0.2.0
+      - -usr/lib/aarch64-linux-gnu/libmnl.so.0
 
   libmnl:
     after : [build-deps]
     plugin: autotools
     source: https://www.netfilter.org/pub/libmnl/libmnl-1.0.4.tar.bz2
-    autotools-configure-parameters:
-      - "--prefix=/lib"
-      - "--libdir=/lib/x86_64-linux-gnu"
     prime:
       - -usr/local/include
 
@@ -182,11 +181,9 @@ parts:
     after: [libmnl]
     plugin: autotools
     source: https://www.netfilter.org/projects/libnftnl/files/libnftnl-1.2.1.tar.bz2
-    autotools-configure-parameters:
-      - "--prefix=/lib"
-      - "--libdir=/lib/x86_64-linux-gnu"
     build-environment:
-      - LIBMNL_LIBS: $CRAFT_STAGE/lib/x86_64-linux-gnu
+      - LIBMNL_LIBS: "-L$CRAFT_STAGE/usr/local/lib"
+      - LIBMNL_CFLAGS: "-I$CRAFT_STAGE/usr/local/include"
     prime:
       - -usr/local/include
 
@@ -195,8 +192,10 @@ parts:
     source: https://www.netfilter.org/projects/iptables/files/iptables-1.8.8.tar.bz2
     plugin: autotools
     build-environment:
-      - LIBMNL_LIBS: $CRAFT_STAGE/lib/x86_64-linux-gnu
-      - LIBNFTNL_LIBS: $CRAFT_STAGE/lib/x86_64-linux-gnu
+      - LIBMNL_LIBS: "-L$CRAFT_STAGE/usr/local/lib"
+      - LIBMNL_CFLAGS: "-I$CRAFT_STAGE/usr/local/include"
+      - LIBNFTNL_LIBS: "-L$CRAFT_STAGE/usr/local/lib"
+      - LIBNFTNL_CFLAGS: "-I$CRAFT_STAGE/usr/local/include"
     autotools-configure-parameters:
       - "--prefix=/usr"
       - "--exec-prefix=/"
