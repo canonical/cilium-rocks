@@ -164,65 +164,24 @@ parts:
       - kmod
       - ca-certificates
       - libz3-dev
-    stage:
-      - -usr/lib/x86_64-linux-gnu/libmnl.so.0.2.0
-      - -usr/lib/x86_64-linux-gnu/libmnl.so.0
-      - -usr/lib/aarch64-linux-gnu/libmnl.so.0.2.0
-      - -usr/lib/aarch64-linux-gnu/libmnl.so.0
-
-  libmnl:
-    after : [build-deps]
-    plugin: autotools
-    source: https://www.netfilter.org/pub/libmnl/libmnl-1.0.4.tar.bz2
-    prime:
-      - -usr/local/include
-
-  libnftnl:
-    after: [libmnl]
-    plugin: autotools
-    source: https://www.netfilter.org/projects/libnftnl/files/libnftnl-1.2.1.tar.bz2
-    build-environment:
-      - LIBMNL_LIBS: "-L$CRAFT_STAGE/usr/local/lib"
-      - LIBMNL_CFLAGS: "-I$CRAFT_STAGE/usr/local/include"
-    prime:
-      - -usr/local/include
 
   iptables:
-    after: [libnftnl]
-    source: https://www.netfilter.org/projects/iptables/files/iptables-1.8.8.tar.bz2
-    plugin: autotools
-    build-environment:
-      - LIBMNL_LIBS: "-L$CRAFT_STAGE/usr/local/lib"
-      - LIBMNL_CFLAGS: "-I$CRAFT_STAGE/usr/local/include"
-      - LIBNFTNL_LIBS: "-L$CRAFT_STAGE/usr/local/lib"
-      - LIBNFTNL_CFLAGS: "-I$CRAFT_STAGE/usr/local/include"
-    autotools-configure-parameters:
-      - "--prefix=/usr"
-      - "--exec-prefix=/"
-      - "--disable-shared"
-      - "--enable-static"
-    stage:
-      - -usr/share
-      - -lib/pkgconfig
-      - -bin/iptables-xml
-    organize:
-      sbin: usr/sbin
+    plugin: nil
+    stage-packages:
+      - iptables
 
   iptables-wrapper:
     after: [iptables]
     plugin: nil
-    source-type: git
-    source: https://github.com/kubernetes-sigs/iptables-wrappers.git
-    source-commit: "e139a115350974aac8a82ec4b815d2845f86997e"
-    source-depth: 1
-    override-build: |
-      mv /usr/sbin /usr/sbin-tmp
-      ln -sf $CRAFT_STAGE/usr/sbin /usr/sbin
-      ./iptables-wrapper-installer.sh
-      mkdir -p $CRAFT_PART_INSTALL/usr/sbin
-      cp $CRAFT_STAGE/usr/sbin/iptables-wrapper $CRAFT_PART_INSTALL/usr/sbin/
-      rm -rf /usr/sbin
-      mv /usr/sbin-tmp /usr/sbin
+    source-type: file
+    source: ./iptables-wrapper-installer.sh
+    build-environment:
+    - OVERRIDE_PATH: "$CRAFT_PRIME/usr/sbin"
+    - OVERRIDE_SBIN: "/usr/sbin"
+    - OVERRIDE_ALTSTYLE: "none"
+    override-prime: |
+      craftctl default
+      $CRAFT_PART_BUILD/iptables-wrapper-installer.sh --no-sanity-check
 
   bpftool:
     plugin: make
