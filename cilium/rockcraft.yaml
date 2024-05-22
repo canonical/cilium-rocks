@@ -8,6 +8,7 @@ base: ubuntu@22.04
 build-base: ubuntu@22.04
 platforms:
   amd64:
+  arm64:
 
 environment:
   HUBBLE_SERVER: "unix:///var/run/cilium/hubble.sock"
@@ -18,18 +19,6 @@ services:
     command: /usr/bin/cilium-dbg
     override: replace
     startup: enabled
-
-package-repositories:
-  - type: apt
-    url: http://apt.llvm.org/jammy/
-    suites: ["llvm-toolchain-jammy-15"]
-    components: ["main"]
-    key-id: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
-  - type: apt
-    url: http://apt.llvm.org/focal/
-    suites: ["llvm-toolchain-focal-10"]
-    components: ["main"]
-    key-id: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
 
 parts:
   bazelisk:
@@ -175,66 +164,24 @@ parts:
       - kmod
       - ca-certificates
       - libz3-dev
-    stage:
-      - -usr/lib/x86_64-linux-gnu/libmnl.so.0.2.0
-      - -usr/lib/x86_64-linux-gnu/libmnl.so.0
-
-  libmnl:
-    after : [build-deps]
-    plugin: autotools
-    source: https://www.netfilter.org/pub/libmnl/libmnl-1.0.4.tar.bz2
-    autotools-configure-parameters:
-      - "--prefix=/lib"
-      - "--libdir=/lib/x86_64-linux-gnu"
-    prime:
-      - -usr/local/include
-
-  libnftnl:
-    after: [libmnl]
-    plugin: autotools
-    source: https://www.netfilter.org/projects/libnftnl/files/libnftnl-1.2.1.tar.bz2
-    autotools-configure-parameters:
-      - "--prefix=/lib"
-      - "--libdir=/lib/x86_64-linux-gnu"
-    build-environment:
-      - LIBMNL_LIBS: $CRAFT_STAGE/lib/x86_64-linux-gnu
-    prime:
-      - -usr/local/include
 
   iptables:
-    after: [libnftnl]
-    source: https://www.netfilter.org/projects/iptables/files/iptables-1.8.8.tar.bz2
-    plugin: autotools
-    build-environment:
-      - LIBMNL_LIBS: $CRAFT_STAGE/lib/x86_64-linux-gnu
-      - LIBNFTNL_LIBS: $CRAFT_STAGE/lib/x86_64-linux-gnu
-    autotools-configure-parameters:
-      - "--prefix=/usr"
-      - "--exec-prefix=/"
-      - "--disable-shared"
-      - "--enable-static"
-    stage:
-      - -usr/share
-      - -lib/pkgconfig
-      - -bin/iptables-xml
-    organize:
-      sbin: usr/sbin
+    plugin: nil
+    stage-packages:
+      - iptables
 
   iptables-wrapper:
     after: [iptables]
     plugin: nil
-    source-type: git
-    source: https://github.com/kubernetes-sigs/iptables-wrappers.git
-    source-commit: "e139a115350974aac8a82ec4b815d2845f86997e"
-    source-depth: 1
-    override-build: |
-      mv /usr/sbin /usr/sbin-tmp
-      ln -sf $CRAFT_STAGE/usr/sbin /usr/sbin
-      ./iptables-wrapper-installer.sh
-      mkdir -p $CRAFT_PART_INSTALL/usr/sbin
-      cp $CRAFT_STAGE/usr/sbin/iptables-wrapper $CRAFT_PART_INSTALL/usr/sbin/
-      rm -rf /usr/sbin
-      mv /usr/sbin-tmp /usr/sbin
+    source-type: file
+    source: ./iptables-wrapper-installer.sh
+    build-environment:
+    - OVERRIDE_PATH: "$CRAFT_PRIME/usr/sbin"
+    - OVERRIDE_SBIN: "/usr/sbin"
+    - OVERRIDE_ALTSTYLE: "none"
+    override-prime: |
+      craftctl default
+      $CRAFT_PART_BUILD/iptables-wrapper-installer.sh --no-sanity-check
 
   bpftool:
     plugin: make
@@ -307,16 +254,20 @@ parts:
     source-type: git
     source: https://github.com/cilium/cilium.git
     source-tag: v1.15.2
-    source-depth: 1
     build-packages:
-      - clang-10
-      - llvm-10
+      - clang-15
+      - llvm-15
     stage-packages:
-      - clang-10
-      - llvm-10
+      - clang-15
+      - llvm-15
     build-environment:
      - DISABLE_ENVOY_INSTALLATION: 1
+     - PKG_BUILD: 1
+     - NOSTRIP: 0
+     - NOOPT: 0
     override-build: |
+      # Cherry picking new debug symbols introduced in newer LLVM versions to ignore list
+      git cherry-pick b91046955d6ba6e335d8b71037e0a5154a09d064 --strategy-option theirs
       make build-container
       export DESTDIR=$CRAFT_PART_INSTALL
       make install-container-binary
@@ -330,9 +281,9 @@ parts:
       cp $CRAFT_PART_BUILD/plugins/cilium-cni/install-plugin.sh $CRAFT_PART_INSTALL/
       cp $CRAFT_PART_SRC/plugins/cilium-cni/cni-uninstall.sh $CRAFT_PART_INSTALL/
 
-      cp -a $CRAFT_PART_INSTALL/usr/bin/clang-10 $CRAFT_PART_INSTALL/usr/bin/clang
-      cp -a $CRAFT_PART_INSTALL/usr/bin/llc-10 $CRAFT_PART_INSTALL/usr/bin/llc
-      cp -a $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy-10 $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy
+      cp -a $CRAFT_PART_INSTALL/usr/bin/clang-15 $CRAFT_PART_INSTALL/usr/bin/clang
+      cp -a $CRAFT_PART_INSTALL/usr/bin/llc-15 $CRAFT_PART_INSTALL/usr/bin/llc
+      cp -a $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy-15 $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy
     override-prime: |
       craftctl default
       rm -rf /root/.cache/go-build

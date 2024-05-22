@@ -14,6 +14,9 @@ jobs:
       trivy-image-config: "trivy.yaml"
       multiarch-awareness: true
       cache-action: ${{ (github.event_name == 'push') && 'save' || 'restore' }}
+      rockcraft-revisions: '{"amd64": "1783", "arm64": "1784"}'
+      arch-skipping-maximize-build-space: '["arm64"]'
+      platform-labels: '{"arm64": ["Ubuntu_ARM64_4C_16G_01"]}'
   build-and-push-multiarch-manifest:
     name: Combine Rocks and Push Multiarch Manifest
     uses: canonical/k8s-workflows/.github/workflows/assemble_multiarch_image.yaml@main
