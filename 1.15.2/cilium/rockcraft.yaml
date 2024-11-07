@@ -69,8 +69,9 @@ parts:
     override-build: |
       export PKG_BUILD=1
       export DESTDIR=$CRAFT_PART_INSTALL
-      # Workaround for bazel python plugin/bits to ignore running as root
-      sed -i -e 's/envoy_dependencies_extra()/envoy_dependencies_extra(ignore_root_user_error=True)/g' WORKSPACE
+      export EMAIL=root@localhost
+      git am --ignore-whitespace $CRAFT_PROJECT_DIR/envoy-fixes.patch
+
       make -C proxylib all
       mkdir -p $CRAFT_PART_INSTALL/usr/lib/
       cp proxylib/libcilium.so $CRAFT_PART_INSTALL/usr/lib/

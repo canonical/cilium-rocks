@@ -1,0 +1,71 @@
+From 9d84536cb003b6ab0b4142b142c238ee531860e3 Mon Sep 17 00:00:00 2001
+From: root <root@rockcraft-cilium-on-amd64-for-amd64-9479005.lxd>
+Date: Thu, 7 Nov 2024 09:51:32 +0000
+Subject: [PATCH] Envoy fixes
+
+* updated checksum
+* workaround to allow running as root
+---
+ WORKSPACE                                  |  3 ++-
+ patches/0005-ci-change-googleurl-dep.patch | 29 ++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 1 deletion(-)
+ create mode 100644 patches/0005-ci-change-googleurl-dep.patch
+
+diff --git a/WORKSPACE b/WORKSPACE
+index 115aefc..723fc53 100644
+--- a/WORKSPACE
++++ b/WORKSPACE
+@@ -36,6 +36,7 @@ git_repository(
+         "@//patches:0002-upstream-Add-callback-for-upstream-authorization.patch",
+         "@//patches:0003-tcp_proxy-Add-filter-state-proxy_read_before_connect.patch",
+         "@//patches:0004-listener-add-socket-options.patch",
++        "@//patches:0005-ci-change-googleurl-dep.patch",
+     ],
+     # // clang-format off: Envoy's format check: Only repository_locations.bzl may contains URL references
+     remote = "https://github.com/envoyproxy/envoy.git",
+@@ -65,7 +66,7 @@ envoy_dependencies()
+
+ load("@envoy//bazel:repositories_extra.bzl", "envoy_dependencies_extra")
+
+-envoy_dependencies_extra()
++envoy_dependencies_extra(ignore_root_user_error=True)
+
+ load("@envoy//bazel:python_dependencies.bzl", "envoy_python_dependencies")
+
+diff --git a/patches/0005-ci-change-googleurl-dep.patch b/patches/0005-ci-change-googleurl-dep.patch
+new file mode 100644
+index 0000000..e27ec76
+--- /dev/null
++++ b/patches/0005-ci-change-googleurl-dep.patch
+@@ -0,0 +1,29 @@
++From a0da603209681f425f1e1fb2c7abddd24f3e2b1f Mon Sep 17 00:00:00 2001
++From: Alyssa Wilk <alyssar@chromium.org>
++Date: Wed, 9 Oct 2024 19:30:30 +0000
++Subject: [PATCH] ci: change googleurl dep
++
++Signed-off-by: Alyssa Wilk <alyssar@chromium.org>
++---
++ bazel/repository_locations.bzl | 4 ++--
++ 1 file changed, 2 insertions(+), 2 deletions(-)
++
++diff --git a/bazel/repository_locations.bzl b/bazel/repository_locations.bzl
++index b6e02d489b..e42a6e7e2f 100644
++--- a/bazel/repository_locations.bzl
+++++ b/bazel/repository_locations.bzl
++@@ -1222,9 +1222,9 @@ REPOSITORY_LOCATIONS_SPEC = dict(
++         project_name = "Chrome URL parsing library",
++         project_desc = "Chrome URL parsing library",
++         project_url = "https://quiche.googlesource.com/googleurl",
++-        # Static snapshot of https://quiche.googlesource.com/googleurl/+archive/dd4080fec0b443296c0ed0036e1e776df8813aa7.tar.gz
++         version = "dd4080fec0b443296c0ed0036e1e776df8813aa7",
++-        sha256 = "59f14d4fb373083b9dc8d389f16bbb817b5f936d1d436aa67e16eb6936028a51",
+++        sha256 = "fc694942e8a7491dcc1dde1bddf48a31370a1f46fef862bc17acf07c34dc6325",
+++        # Static snapshot of https://quiche.googlesource.com/googleurl/+archive/dd4080fec0b443296c0ed0036e1e776df8813aa7.tar.gz
++         urls = ["https://storage.googleapis.com/quiche-envoy-integration/{version}.tar.gz"],
++         use_category = ["controlplane", "dataplane_core"],
++         extensions = [],
++--
++2.43.0
++
+--
+2.34.1
