@@ -36,7 +36,7 @@ parts:
     plugin: make
     source-type: git
     source: https://github.com/cilium/proxy.git
-    source-tag: v1.27
+    source-tag: v1.29
     source-depth: 1
     build-packages:
       - autoconf
@@ -69,8 +69,8 @@ parts:
     override-build: |
       export PKG_BUILD=1
       export DESTDIR=$CRAFT_PART_INSTALL
-      export EMAIL=root@localhost
-      git am --ignore-whitespace $CRAFT_PROJECT_DIR/envoy-fixes.patch
+      # Workaround for bazel python plugin/bits to ignore running as root
+      sed -i -e 's/envoy_dependencies_extra()/envoy_dependencies_extra(ignore_root_user_error=True)/g' WORKSPACE
 
       make -C proxylib all
       mkdir -p $CRAFT_PART_INSTALL/usr/lib/
