@@ -4,8 +4,8 @@ description: This rock is a drop in replacement for the cilium/cilium image.
 version: "1.16.3"
 license: Apache-2.0
 
-base: ubuntu@22.04
-build-base: ubuntu@22.04
+base: ubuntu@24.04
+build-base: ubuntu@24.04
 platforms:
   amd64:
   arm64:
@@ -59,13 +59,13 @@ parts:
       - libc6-dev
       - gcc
       - binutils
-      - clang-15
-      - clang-tools-15
-      - lldb-15
-      - lld-15
-      - clang-format-15
-      - libc++-15-dev
-      - libc++abi-15-dev
+      - clang-17
+      - clang-tools-17
+      - lldb-17
+      - lld-17
+      - clang-format-17
+      - libc++-17-dev
+      - libc++abi-17-dev
     override-build: |
       export PKG_BUILD=1
       export DESTDIR=$CRAFT_PART_INSTALL
@@ -96,7 +96,7 @@ parts:
   build-deps:
     plugin: nil
     build-snaps:
-      - go/1.21/stable
+      - go/1.22/stable
     build-packages:
       - autoconf
       - automake
@@ -124,7 +124,7 @@ parts:
     plugin: cmake
     source-type: git
     source: https://github.com/protocolbuffers/protobuf.git
-    source-tag: v24.0
+    source-tag: v28.2
     source-depth: 1
     source-submodules:
       - third_party/googletest
@@ -149,10 +149,9 @@ parts:
     plugin: go
     source: ""
     override-build: |
-      # 8ba23be9613c672d40ae261d2a1335d639bdd59b == tag: cmd/protoc-gen-go-grpc/v1.3.0
-      go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@8ba23be9613c672d40ae261d2a1335d639bdd59b
-      go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0
-      go install github.com/mitchellh/protoc-gen-go-json@49905733154f04e47d685de62c2cc2b72613b69e
+      go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@1adbea267b837660726952ed6711b348dee87aa5
+      go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.1
+      go install github.com/mfridman/protoc-gen-go-json@v1.4.0
       go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1
 
   runtime-img-deps:
@@ -197,18 +196,18 @@ parts:
       - zlib1g-dev
       - libelf-dev
       - libiberty-dev
-      - llvm-15
-      - clang-15
-      - clang-tools-15
-      - lldb-15
-      - lld-15
-      - clang-format-15
-      - libc++-15-dev
-      - libc++abi-15-dev
+      - llvm-17
+      - clang-17
+      - clang-tools-17
+      - lldb-17
+      - lld-17
+      - clang-format-17
+      - libc++-17-dev
+      - libc++abi-17-dev
     build-environment:
       - EXTRA_CFLAGS: --static
-      - LLVM_CONFIG: "/usr/bin/llvm-config-15"
-      - LLVM_STRIP: "/usr/bin/llvm-strip-15"
+      - LLVM_CONFIG: "/usr/bin/llvm-config-17"
+      - LLVM_STRIP: "/usr/bin/llvm-strip-17"
 
   gops:
     after: [build-deps]
@@ -227,7 +226,7 @@ parts:
     plugin: go
     source-type: git
     source: https://github.com/containernetworking/plugins.git
-    source-tag: v1.4.0
+    source-tag: v1.5.0
     source-depth: 1
     override-build: |
       ./build_linux.sh
@@ -242,7 +241,7 @@ parts:
     plugin: make
     source-type: git
     source: "https://github.com/cilium/hubble.git"
-    source-tag: v0.13.2
+    source-tag: v1.16.3
     source-depth: 1
     override-build: |
       craftctl default
@@ -256,11 +255,11 @@ parts:
     source: https://github.com/cilium/cilium.git
     source-tag: v1.16.3
     build-packages:
-      - clang-15
-      - llvm-15
+      - clang-17
+      - llvm-17
     stage-packages:
-      - clang-15
-      - llvm-15
+      - clang-17
+      - llvm-17
     build-environment:
      - DISABLE_ENVOY_INSTALLATION: 1
      - PKG_BUILD: 1
@@ -282,9 +281,9 @@ parts:
       cp $CRAFT_PART_BUILD/plugins/cilium-cni/install-plugin.sh $CRAFT_PART_INSTALL/
       cp $CRAFT_PART_SRC/plugins/cilium-cni/cni-uninstall.sh $CRAFT_PART_INSTALL/
 
-      cp -a $CRAFT_PART_INSTALL/usr/bin/clang-15 $CRAFT_PART_INSTALL/usr/bin/clang
-      cp -a $CRAFT_PART_INSTALL/usr/bin/llc-15 $CRAFT_PART_INSTALL/usr/bin/llc
-      cp -a $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy-15 $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy
+      cp -a $CRAFT_PART_INSTALL/usr/bin/clang-17 $CRAFT_PART_INSTALL/usr/bin/clang
+      cp -a $CRAFT_PART_INSTALL/usr/bin/llc-17 $CRAFT_PART_INSTALL/usr/bin/llc
+      cp -a $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy-17 $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy
     override-prime: |
       craftctl default
       rm -rf /root/.cache/go-build
