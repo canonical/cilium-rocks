@@ -193,6 +193,8 @@ parts:
     source-submodules:
       - "libbpf"
     build-packages:
+      - xz-utils
+      - libzstd-dev
       - zlib1g-dev
       - libelf-dev
       - libiberty-dev
@@ -208,7 +210,12 @@ parts:
       - EXTRA_CFLAGS: --static
       - LLVM_CONFIG: "/usr/bin/llvm-config-17"
       - LLVM_STRIP: "/usr/bin/llvm-strip-17"
+    override-build: |
+      # libelf requires zstd on Ubuntu 24.04, this hasn't been addressed
+      # in bpftool yet.
+      sed -i 's/-lelf/-lelf -lzstd/g' src/Makefile
 
+      OUTPUT=$CRAFT_PART_INSTALL make -C src -j "$(nproc)"
   gops:
     after: [build-deps]
     plugin: go
