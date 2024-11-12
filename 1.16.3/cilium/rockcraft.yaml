@@ -215,7 +215,12 @@ parts:
       # in bpftool yet.
       sed -i 's/-lelf/-lelf -lzstd/g' src/Makefile
 
-      OUTPUT=$CRAFT_PART_INSTALL make -C src -j "$(nproc)"
+      make -C src -j "$(nproc)"
+
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/sbin/
+      cp ./src/bpftool $CRAFT_PART_INSTALL/usr/local/sbin/
+      chmod 755 $CRAFT_PART_INSTALL/usr/local/sbin/bpftool
+
   gops:
     after: [build-deps]
     plugin: go
