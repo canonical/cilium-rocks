@@ -1,0 +1,299 @@
+name: cilium
+summary: Cilium agent rock for the Cilium CNI.
+description: This rock is a drop in replacement for the cilium/cilium image.
+version: "1.16.3"
+license: Apache-2.0
+
+base: ubuntu@24.04
+build-base: ubuntu@24.04
+platforms:
+  amd64:
+  arm64:
+
+environment:
+  HUBBLE_SERVER: "unix:///var/run/cilium/hubble.sock"
+  INITSYSTEM: "SYSTEMD"
+
+services:
+  cilium:
+    command: /usr/bin/cilium-dbg
+    override: replace
+    startup: enabled
+
+parts:
+  bazelisk:
+    plugin: nil
+    build-packages:
+      - wget
+    overlay-script: |
+      wget https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-$CRAFT_ARCH_BUILD_FOR
+      mv bazelisk-linux-$CRAFT_ARCH_BUILD_FOR /usr/bin/bazelisk
+      chmod +x /usr/bin/bazelisk
+      ln -sf /usr/bin/bazelisk /usr/bin/bazel
+
+  cilium-envoy:
+    after: [bazelisk]
+    plugin: make
+    source-type: git
+    source: https://github.com/cilium/proxy.git
+    source-tag: v1.29
+    source-depth: 1
+    build-packages:
+      - autoconf
+      - automake
+      - cmake
+      - coreutils
+      - curl
+      - git
+      - libtool
+      - make
+      - ninja-build
+      - patch
+      - patchelf
+      - python3
+      - python-is-python3
+      - unzip
+      - virtualenv
+      - wget
+      - zip
+      - libc6-dev
+      - gcc
+      - binutils
+      - clang-17
+      - clang-tools-17
+      - lldb-17
+      - lld-17
+      - clang-format-17
+      - libc++-17-dev
+      - libc++abi-17-dev
+    override-build: |
+      export PKG_BUILD=1
+      export DESTDIR=$CRAFT_PART_INSTALL
+      # Workaround for bazel python plugin/bits to ignore running as root
+      sed -i -e 's/envoy_dependencies_extra()/envoy_dependencies_extra(ignore_root_user_error=True)/g' WORKSPACE
+
+      make -C proxylib all
+      mkdir -p $CRAFT_PART_INSTALL/usr/lib/
+      cp proxylib/libcilium.so $CRAFT_PART_INSTALL/usr/lib/
+      cp proxylib/libcilium.so /usr/lib/
+      git rev-parse HEAD >SOURCE_VERSION
+      make bazel-bin/cilium-envoy
+      make install
+      rm -rf /root/.cache/bazel
+
+  builder-img-deps:
+    plugin: nil
+    build-packages:
+      - unzip
+      - binutils
+      - coreutils
+      - curl
+      - gcc
+      - git
+      - libc6-dev
+      - make
+
+  build-deps:
+    plugin: nil
+    build-snaps:
+      - go/1.22/stable
+    build-packages:
+      - autoconf
+      - automake
+      - autopoint
+      - autotools-dev
+      - build-essential
+      - pkg-config
+
+  debug-wrapper:
+    after: [build-deps, builder-img-deps]
+    plugin: go
+    source-type: git
+    source: https://github.com/cilium/cilium.git
+    source-tag: v1.16.3
+    source-depth: 1
+    source-subdir: images/builder
+    build-environment:
+      - CGO_ENABLED: 0
+    override-build: |
+      cd $CRAFT_PART_SRC_WORK
+      go install github.com/go-delve/delve/cmd/dlv@latest
+      go install -ldflags "-s -w" debug-wrapper.go
+
+  protoc:
+    plugin: cmake
+    source-type: git
+    source: https://github.com/protocolbuffers/protobuf.git
+    source-tag: v28.2
+    source-depth: 1
+    source-submodules:
+      - third_party/googletest
+      - third_party/abseil-cpp
+      - third_party/jsoncpp
+    cmake-generator: Ninja
+    build-packages:
+      - g++
+      - git
+    override-build: |
+      cmake $CRAFT_PART_SRC -G Ninja \
+        -DCMAKE_BUILD_TYPE="Release" \
+        -DCMAKE_INSTALL_PREFIX="$CRAFT_PART_INSTALL/usr/local"
+      ninja install
+    stage:
+    - -usr/local/lib
+    - -usr/local/include/absl
+    - -usr/local/include/utf8_range.h
+    - -usr/local/include/utf8_validity.h
+
+  protoplugins:
+    plugin: go
+    source: ""
+    override-build: |
+      go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@1adbea267b837660726952ed6711b348dee87aa5
+      go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.1
+      go install github.com/mfridman/protoc-gen-go-json@v1.4.0
+      go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1
+
+  runtime-img-deps:
+    plugin: nil
+    stage-packages:
+      - jq
+      - bash-completion
+      - iproute2
+      - ipset
+      - kmod
+      - ca-certificates
+      - libz3-dev
+
+  iptables:
+    plugin: nil
+    stage-packages:
+      - iptables
+
+  iptables-wrapper:
+    after: [iptables]
+    plugin: nil
+    source-type: file
+    source: ./iptables-wrapper-installer.sh
+    build-environment:
+    - OVERRIDE_PATH: "$CRAFT_PRIME/usr/sbin"
+    - OVERRIDE_SBIN: "/usr/sbin"
+    - OVERRIDE_ALTSTYLE: "none"
+    override-prime: |
+      craftctl default
+      $CRAFT_PART_BUILD/iptables-wrapper-installer.sh --no-sanity-check
+
+  bpftool:
+    plugin: make
+    source-type: git
+    source: https://github.com/libbpf/bpftool.git
+    source-tag: v7.4.0
+    source-depth: 1
+    source-subdir: src
+    source-submodules:
+      - "libbpf"
+    build-packages:
+      - xz-utils
+      - libzstd-dev
+      - zlib1g-dev
+      - libelf-dev
+      - libiberty-dev
+      - llvm-17
+      - clang-17
+      - clang-tools-17
+      - lldb-17
+      - lld-17
+      - clang-format-17
+      - libc++-17-dev
+      - libc++abi-17-dev
+    build-environment:
+      - EXTRA_CFLAGS: --static
+      - LLVM_CONFIG: "/usr/bin/llvm-config-17"
+      - LLVM_STRIP: "/usr/bin/llvm-strip-17"
+    override-build: |
+      # libelf requires zstd on Ubuntu 24.04, this hasn't been addressed
+      # in bpftool yet.
+      sed -i 's/-lelf/-lelf -lzstd/g' src/Makefile
+
+      make -C src -j "$(nproc)"
+
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/sbin/
+      cp ./src/bpftool $CRAFT_PART_INSTALL/usr/local/sbin/
+      chmod 755 $CRAFT_PART_INSTALL/usr/local/sbin/bpftool
+
+  gops:
+    after: [build-deps]
+    plugin: go
+    source-type: git
+    source: https://github.com/google/gops.git
+    source-tag: v0.3.27
+    source-depth: 1
+    build-environment:
+      - CGO_ENABLED: 0
+    override-build: |
+      go install -ldflags "-s -w" ./...
+
+  cni-plugins:
+    after: [build-deps]
+    plugin: go
+    source-type: git
+    source: https://github.com/containernetworking/plugins.git
+    source-tag: v1.5.0
+    source-depth: 1
+    override-build: |
+      ./build_linux.sh
+      cp -r $CRAFT_PART_BUILD/bin $CRAFT_PART_INSTALL
+    stage:
+      - -bin
+    organize:
+      bin/loopback: cni/loopback
+
+  hubble:
+    after: [build-deps]
+    plugin: make
+    source-type: git
+    source: "https://github.com/cilium/hubble.git"
+    source-tag: v1.16.3
+    source-depth: 1
+    override-build: |
+      craftctl default
+      mkdir -p $CRAFT_PART_INSTALL/etc/bash_completion.d
+      $CRAFT_PART_INSTALL/usr/local/bin/hubble completion bash > $CRAFT_PART_INSTALL/etc/bash_completion.d/hubble
+
+  cilium:
+    after: [build-deps, builder-img-deps]
+    plugin: make
+    source-type: git
+    source: https://github.com/cilium/cilium.git
+    source-tag: v1.16.3
+    build-packages:
+      - clang-17
+      - llvm-17
+    stage-packages:
+      - clang-17
+      - llvm-17
+    build-environment:
+     - DISABLE_ENVOY_INSTALLATION: 1
+     - PKG_BUILD: 1
+     - NOSTRIP: 0
+     - NOOPT: 0
+    override-build: |
+      make build-container
+      export DESTDIR=$CRAFT_PART_INSTALL
+      make install-container-binary
+      make install-bash-completion
+      make licenses-all
+
+      echo 'install_cni "/usr/bin/cilium-dbg"' >> $CRAFT_PART_BUILD/plugins/cilium-cni/install-plugin.sh
+
+      cp $CRAFT_PART_BUILD/LICENSE.all  $CRAFT_PART_INSTALL/
+      cp $CRAFT_PART_SRC/images/cilium/init-container.sh $CRAFT_PART_INSTALL/
+      cp $CRAFT_PART_BUILD/plugins/cilium-cni/install-plugin.sh $CRAFT_PART_INSTALL/
+      cp $CRAFT_PART_SRC/plugins/cilium-cni/cni-uninstall.sh $CRAFT_PART_INSTALL/
+
+      cp -a $CRAFT_PART_INSTALL/usr/bin/clang-17 $CRAFT_PART_INSTALL/usr/bin/clang
+      cp -a $CRAFT_PART_INSTALL/usr/bin/llc-17 $CRAFT_PART_INSTALL/usr/bin/llc
+      cp -a $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy-17 $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy
+    override-prime: |
+      craftctl default
+      rm -rf /root/.cache/go-build
