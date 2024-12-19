@@ -1,7 +1,14 @@
+# NOTE(aznashwan): this was adapted from the existing ROCK definition
+# for release v1.16.3, the outlined changes being referenced from:
+#
+# * in cilium/cilium repo: git diff tags/1.16.3 tags/1.16.5
+# * in cilium/proxy repo: git diff origin/v1.29 origin/v1.30
+# * in cilium/image-tools: <no tags to reference, just sourced from `main`>
+
 name: cilium
 summary: Cilium agent rock for the Cilium CNI.
 description: This rock is a drop in replacement for the cilium/cilium image.
-version: "1.16.3"
+version: "1.16.5"
 license: Apache-2.0
 
 base: ubuntu@24.04
@@ -21,22 +28,27 @@ services:
     startup: enabled
 
 parts:
+  # https://github.com/cilium/proxy/blob/v1.30/Dockerfile.builder#L44-L46
   bazelisk:
     plugin: nil
     build-packages:
       - wget
     overlay-script: |
-      wget https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-$CRAFT_ARCH_BUILD_FOR
+      # in cilium/proxy: git diff origin/v1.29 origin/v1.30 -- Dockerfile.builder
+      wget https://github.com/bazelbuild/bazelisk/releases/download/v1.20.0/bazelisk-linux-$CRAFT_ARCH_BUILD_FOR
       mv bazelisk-linux-$CRAFT_ARCH_BUILD_FOR /usr/bin/bazelisk
       chmod +x /usr/bin/bazelisk
       ln -sf /usr/bin/bazelisk /usr/bin/bazel
 
+  # https://github.com/cilium/proxy/blob/v1.30/Dockerfile#L17-L24
   cilium-envoy:
     after: [bazelisk]
     plugin: make
     source-type: git
     source: https://github.com/cilium/proxy.git
-    source-tag: v1.29
+    # git diff tags/1.16.3 tags/1.16.5 -- .//images/cilium/Dockerfile
+    # https://github.com/cilium/cilium/blob/v1.16.5/images/cilium/Dockerfile#L6-L9
+    source-tag: v1.30
     source-depth: 1
     build-packages:
       - autoconf
@@ -96,6 +108,7 @@ parts:
   build-deps:
     plugin: nil
     build-snaps:
+      # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/Dockerfile#L7
       - go/1.22/stable
     build-packages:
       - autoconf
@@ -105,12 +118,14 @@ parts:
       - build-essential
       - pkg-config
 
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/Dockerfile#L66-L70
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/build-debug-wrapper.sh
   debug-wrapper:
     after: [build-deps, builder-img-deps]
     plugin: go
     source-type: git
     source: https://github.com/cilium/cilium.git
-    source-tag: v1.16.3
+    source-tag: v1.16.5
     source-depth: 1
     source-subdir: images/builder
     build-environment:
@@ -120,11 +135,14 @@ parts:
       go install github.com/go-delve/delve/cmd/dlv@latest
       go install -ldflags "-s -w" debug-wrapper.go
 
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/install-protoc.sh
   protoc:
     plugin: cmake
     source-type: git
     source: https://github.com/protocolbuffers/protobuf.git
-    source-tag: v28.2
+    # git diff tags/1.16.3 tags/1.16.5 -- .//images/builder/install-protoc.sh
+    # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/install-protoc.sh#L12
+    source-tag: v29.1
     source-depth: 1
     source-submodules:
       - third_party/googletest
@@ -145,13 +163,15 @@ parts:
     - -usr/local/include/utf8_range.h
     - -usr/local/include/utf8_validity.h
 
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/install-protoplugins.sh
   protoplugins:
     plugin: go
     source: ""
     override-build: |
       go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@1adbea267b837660726952ed6711b348dee87aa5
-      go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.1
-      go install github.com/mfridman/protoc-gen-go-json@v1.4.0
+      # git diff tags/1.16.3 tags/1.16.5 -- .//images/builder/install-protoplugins.sh
+      go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.2
+      go install github.com/mfridman/protoc-gen-go-json@v1.4.1
       go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1
 
   runtime-img-deps:
@@ -170,10 +190,13 @@ parts:
     stage-packages:
       - iptables
 
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/Dockerfile#L46-L47
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/iptables-wrapper-installer.sh
   iptables-wrapper:
     after: [iptables]
     plugin: nil
     source-type: file
+    # NOTE: we maintain out own version of ./iptables-wrapper-installer.sh.
     source: ./iptables-wrapper-installer.sh
     build-environment:
     - OVERRIDE_PATH: "$CRAFT_PRIME/usr/sbin"
@@ -183,6 +206,10 @@ parts:
       craftctl default
       $CRAFT_PART_BUILD/iptables-wrapper-installer.sh --no-sanity-check
 
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/Dockerfile#L9
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/Dockerfile#L50
+  # https://github.com/cilium/image-tools/blob/master/images/bpftool/Dockerfile#L12-L13
+  # https://github.com/cilium/image-tools/blob/master/images/bpftool/checkout-linux.sh#L11-L12
   bpftool:
     plugin: make
     source-type: git
@@ -221,10 +248,12 @@ parts:
       cp ./src/bpftool $CRAFT_PART_INSTALL/usr/local/sbin/
       chmod 755 $CRAFT_PART_INSTALL/usr/local/sbin/bpftool
 
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/Dockerfile#L20-L23
   gops:
     after: [build-deps]
     plugin: go
     source-type: git
+    # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/build-gops.sh#L11-L12
     source: https://github.com/google/gops.git
     source-tag: v0.3.27
     source-depth: 1
@@ -233,12 +262,15 @@ parts:
     override-build: |
       go install -ldflags "-s -w" ./...
 
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/Dockerfile#L24-L26
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/download-cni.sh#L13
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/cni-version.sh#L2
   cni-plugins:
     after: [build-deps]
     plugin: go
     source-type: git
     source: https://github.com/containernetworking/plugins.git
-    source-tag: v1.5.0
+    source-tag: v1.6.0
     source-depth: 1
     override-build: |
       ./build_linux.sh
@@ -248,12 +280,14 @@ parts:
     organize:
       bin/loopback: cni/loopback
 
-  hubble:
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/cilium/Dockerfile#L43-L55
+  hubble-completion:
     after: [build-deps]
     plugin: make
     source-type: git
     source: "https://github.com/cilium/hubble.git"
-    source-tag: v1.16.3
+    # NOTE: Hubble has same release versioning scheme as Cilium itself.
+    source-tag: v1.16.5
     source-depth: 1
     override-build: |
       craftctl default
@@ -265,7 +299,7 @@ parts:
     plugin: make
     source-type: git
     source: https://github.com/cilium/cilium.git
-    source-tag: v1.16.3
+    source-tag: v1.16.5
     build-packages:
       - clang-17
       - llvm-17
