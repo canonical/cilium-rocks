@@ -84,6 +84,13 @@ parts:
       # Workaround for bazel python plugin/bits to ignore running as root
       sed -i -e 's/envoy_dependencies_extra()/envoy_dependencies_extra(ignore_root_user_error=True)/g' WORKSPACE
 
+      # HACK(aznashwan): there was a known bug in `google/cel-cpp`.
+      # cel-cpp is imported by `envoyproxy` itself, which is imported by `cilium/proxy`.
+      # https://github.com/envoyproxy/envoy/issues/34368
+      # https://github.com/envoyproxy/envoy/pull/36940
+      # https://github.com/envoyproxy/envoy/commit/c7d0d5a340abb34916eaea3833cf5bf85c99b31f
+      sed -i -e 's/ENVOY_SHA = ".*"/ENVOY_SHA = "c7d0d5a340abb34916eaea3833cf5bf85c99b31f"/' WORKSPACE
+
       make -C proxylib all
       mkdir -p $CRAFT_PART_INSTALL/usr/lib/
       cp proxylib/libcilium.so $CRAFT_PART_INSTALL/usr/lib/
