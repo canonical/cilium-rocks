@@ -1,0 +1,139 @@
+# NOTE(aznashwan): this was adapted from the existing ROCK definition
+# for release v1.16.3, the outlined changes being referenced from:
+#
+# * in cilium/cilium repo: git diff tags/1.16.3 tags/1.16.5 -- images/operator
+
+name: cilium-operator-generic
+summary: Cilium operator rock for the Cilium CNI.
+description: This rock is a drop in replacement for the cilium/operator-generic image.
+version: "1.16.5"
+license: Apache-2.0
+
+base: bare
+build-base: ubuntu@22.04
+platforms:
+  amd64:
+  arm64:
+
+environment:
+  GOPS_CONFIG_DIR: "/"
+
+services:
+  cilium:
+    command: /usr/bin/cilium-operator-generic
+    override: replace
+    startup: enabled
+
+parts:
+  builder-img-deps:
+    plugin: nil
+    build-packages:
+      - unzip
+      - binutils
+      - coreutils
+      - curl
+      - gcc
+      - git
+      - libc6-dev
+      - make
+
+  build-deps:
+    plugin: nil
+    build-snaps:
+      - go/1.22/stable
+    build-packages:
+      - autoconf
+      - automake
+      - autopoint
+      - autotools-dev
+      - build-essential
+      - pkg-config
+
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/Dockerfile#L66-L70
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/build-debug-wrapper.sh
+  debug-wrapper:
+    after: [build-deps, builder-img-deps]
+    plugin: go
+    source-type: git
+    source: https://github.com/cilium/cilium.git
+    source-tag: v1.16.5
+    source-subdir: images/builder
+    build-environment:
+      - CGO_ENABLED: 0
+    override-build: |
+      cd $CRAFT_PART_SRC_WORK
+      go install github.com/go-delve/delve/cmd/dlv@latest
+      go install -ldflags "-s -w" debug-wrapper.go
+
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/install-protoc.sh
+  protoc:
+    plugin: cmake
+    source-type: git
+    source: https://github.com/protocolbuffers/protobuf.git
+    # git diff tags/1.16.3 tags/1.16.5 -- .//images/builder/install-protoc.sh
+    # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/install-protoc.sh#L12
+    source-tag: v29.1
+    source-submodules:
+      - third_party/googletest
+      - third_party/abseil-cpp
+      - third_party/jsoncpp
+    cmake-generator: Ninja
+    build-packages:
+      - g++
+      - git
+    override-build: |
+      cmake $CRAFT_PART_SRC -G Ninja \
+        -DCMAKE_BUILD_TYPE="Release" \
+        -DCMAKE_INSTALL_PREFIX="$CRAFT_PART_INSTALL/usr/local"
+      ninja install
+    stage:
+    - -usr/local/lib
+    - -usr/local/include/absl
+    - -usr/local/include/utf8_range.h
+    - -usr/local/include/utf8_validity.h
+
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/install-protoplugins.sh
+  protoplugins:
+    plugin: go
+    source: ""
+    override-build: |
+      go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@1adbea267b837660726952ed6711b348dee87aa5
+      # git diff tags/1.16.3 tags/1.16.5 -- .//images/builder/install-protoplugins.sh
+      go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.2
+      go install github.com/mfridman/protoc-gen-go-json@v1.4.1
+      go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1
+
+  runtime-img-deps:
+    plugin: nil
+    stage-packages:
+      - ca-certificates
+
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/Dockerfile#L20-L23
+  gops:
+    after: [build-deps]
+    plugin: go
+    source-type: git
+    source: https://github.com/google/gops.git
+    # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/build-gops.sh#L11-L12
+    source-tag: v0.3.27
+    build-environment:
+      - CGO_ENABLED: 0
+    override-build: |
+      go install -ldflags "-s -w" ./...
+
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/operator/Dockerfile
+  # https://github.com/cilium/cilium/blob/v1.16.5/Makefile#L65-L66
+  cilium-operator:
+    after: [build-deps, builder-img-deps]
+    plugin: make
+    source-type: git
+    source: https://github.com/cilium/cilium.git
+    source-tag: v1.16.5
+    override-build: |
+      export VARIANT="generic"
+      make build-container-operator-$VARIANT
+      export DESTDIR=$CRAFT_PART_INSTALL
+      make install-container-binary-operator-$VARIANT
+      make licenses-all
+
+      cp $CRAFT_PART_BUILD/LICENSE.all  $CRAFT_PART_INSTALL/

@@ -1,0 +1,333 @@
+# NOTE(aznashwan): this was adapted from the existing ROCK definition
+# for release v1.16.3, the outlined changes being referenced from:
+#
+# * in cilium/cilium repo: git diff tags/1.16.3 tags/1.16.5
+# * in cilium/proxy repo: git diff origin/v1.29 origin/v1.30
+# * in cilium/image-tools: <no tags to reference, just sourced from `main`>
+
+name: cilium
+summary: Cilium agent rock for the Cilium CNI.
+description: This rock is a drop in replacement for the cilium/cilium image.
+version: "1.16.5"
+license: Apache-2.0
+
+base: ubuntu@24.04
+build-base: ubuntu@24.04
+platforms:
+  amd64:
+  arm64:
+
+environment:
+  HUBBLE_SERVER: "unix:///var/run/cilium/hubble.sock"
+  INITSYSTEM: "SYSTEMD"
+
+services:
+  cilium:
+    command: /usr/bin/cilium-dbg
+    override: replace
+    startup: enabled
+
+parts:
+  # https://github.com/cilium/proxy/blob/v1.30/Dockerfile.builder#L44-L46
+  bazelisk:
+    plugin: nil
+    build-packages:
+      - wget
+    overlay-script: |
+      # in cilium/proxy: git diff origin/v1.29 origin/v1.30 -- Dockerfile.builder
+      wget https://github.com/bazelbuild/bazelisk/releases/download/v1.20.0/bazelisk-linux-$CRAFT_ARCH_BUILD_FOR
+      mv bazelisk-linux-$CRAFT_ARCH_BUILD_FOR /usr/bin/bazelisk
+      chmod +x /usr/bin/bazelisk
+      ln -sf /usr/bin/bazelisk /usr/bin/bazel
+
+  # https://github.com/cilium/proxy/blob/v1.30/Dockerfile#L17-L24
+  cilium-envoy:
+    after: [bazelisk]
+    plugin: make
+    source-type: git
+    source: https://github.com/cilium/proxy.git
+    # git diff tags/1.16.3 tags/1.16.5 -- .//images/cilium/Dockerfile
+    # https://github.com/cilium/cilium/blob/v1.16.5/images/cilium/Dockerfile#L6-L9
+    source-tag: v1.30
+    source-depth: 1
+    build-packages:
+      - autoconf
+      - automake
+      - cmake
+      - coreutils
+      - curl
+      - git
+      - libtool
+      - make
+      - ninja-build
+      - patch
+      - patchelf
+      - python3
+      - python-is-python3
+      - unzip
+      - virtualenv
+      - wget
+      - zip
+      - libc6-dev
+      - gcc
+      - binutils
+      - clang-17
+      - clang-tools-17
+      - lldb-17
+      - lld-17
+      - clang-format-17
+      - libc++-17-dev
+      - libc++abi-17-dev
+    override-build: |
+      export PKG_BUILD=1
+      export DESTDIR=$CRAFT_PART_INSTALL
+      export EMAIL=root@localhost
+      git am --ignore-whitespace $CRAFT_PROJECT_DIR/envoy-fixes.patch
+
+      make -C proxylib all
+      mkdir -p $CRAFT_PART_INSTALL/usr/lib/
+      cp proxylib/libcilium.so $CRAFT_PART_INSTALL/usr/lib/
+      cp proxylib/libcilium.so /usr/lib/
+      git rev-parse HEAD >SOURCE_VERSION
+      make bazel-bin/cilium-envoy
+      make install
+      rm -rf /root/.cache/bazel
+
+  builder-img-deps:
+    plugin: nil
+    build-packages:
+      - unzip
+      - binutils
+      - coreutils
+      - curl
+      - gcc
+      - git
+      - libc6-dev
+      - make
+
+  build-deps:
+    plugin: nil
+    build-snaps:
+      # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/Dockerfile#L7
+      - go/1.22/stable
+    build-packages:
+      - autoconf
+      - automake
+      - autopoint
+      - autotools-dev
+      - build-essential
+      - pkg-config
+
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/Dockerfile#L66-L70
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/build-debug-wrapper.sh
+  debug-wrapper:
+    after: [build-deps, builder-img-deps]
+    plugin: go
+    source-type: git
+    source: https://github.com/cilium/cilium.git
+    source-tag: v1.16.5
+    source-depth: 1
+    source-subdir: images/builder
+    build-environment:
+      - CGO_ENABLED: 0
+    override-build: |
+      cd $CRAFT_PART_SRC_WORK
+      go install github.com/go-delve/delve/cmd/dlv@latest
+      go install -ldflags "-s -w" debug-wrapper.go
+
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/install-protoc.sh
+  protoc:
+    plugin: cmake
+    source-type: git
+    source: https://github.com/protocolbuffers/protobuf.git
+    # git diff tags/1.16.3 tags/1.16.5 -- .//images/builder/install-protoc.sh
+    # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/install-protoc.sh#L12
+    source-tag: v29.1
+    source-depth: 1
+    source-submodules:
+      - third_party/googletest
+      - third_party/abseil-cpp
+      - third_party/jsoncpp
+    cmake-generator: Ninja
+    build-packages:
+      - g++
+      - git
+    override-build: |
+      cmake $CRAFT_PART_SRC -G Ninja \
+        -DCMAKE_BUILD_TYPE="Release" \
+        -DCMAKE_INSTALL_PREFIX="$CRAFT_PART_INSTALL/usr/local"
+      ninja install
+    stage:
+    - -usr/local/lib
+    - -usr/local/include/absl
+    - -usr/local/include/utf8_range.h
+    - -usr/local/include/utf8_validity.h
+
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/install-protoplugins.sh
+  protoplugins:
+    plugin: go
+    source: ""
+    override-build: |
+      go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@1adbea267b837660726952ed6711b348dee87aa5
+      # git diff tags/1.16.3 tags/1.16.5 -- .//images/builder/install-protoplugins.sh
+      go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.35.2
+      go install github.com/mfridman/protoc-gen-go-json@v1.4.1
+      go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1
+
+  runtime-img-deps:
+    plugin: nil
+    stage-packages:
+      - jq
+      - bash-completion
+      - iproute2
+      - ipset
+      - kmod
+      - ca-certificates
+      - libz3-dev
+
+  iptables:
+    plugin: nil
+    stage-packages:
+      - iptables
+
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/Dockerfile#L46-L47
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/iptables-wrapper-installer.sh
+  iptables-wrapper:
+    after: [iptables]
+    plugin: nil
+    source-type: file
+    # NOTE: we maintain out own version of ./iptables-wrapper-installer.sh.
+    source: ./iptables-wrapper-installer.sh
+    build-environment:
+    - OVERRIDE_PATH: "$CRAFT_PRIME/usr/sbin"
+    - OVERRIDE_SBIN: "/usr/sbin"
+    - OVERRIDE_ALTSTYLE: "none"
+    override-prime: |
+      craftctl default
+      $CRAFT_PART_BUILD/iptables-wrapper-installer.sh --no-sanity-check
+
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/Dockerfile#L9
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/Dockerfile#L50
+  # https://github.com/cilium/image-tools/blob/master/images/bpftool/Dockerfile#L12-L13
+  # https://github.com/cilium/image-tools/blob/master/images/bpftool/checkout-linux.sh#L11-L12
+  bpftool:
+    plugin: make
+    source-type: git
+    source: https://github.com/libbpf/bpftool.git
+    source-tag: v7.4.0
+    source-depth: 1
+    source-subdir: src
+    source-submodules:
+      - "libbpf"
+    build-packages:
+      - xz-utils
+      - libzstd-dev
+      - zlib1g-dev
+      - libelf-dev
+      - libiberty-dev
+      - llvm-17
+      - clang-17
+      - clang-tools-17
+      - lldb-17
+      - lld-17
+      - clang-format-17
+      - libc++-17-dev
+      - libc++abi-17-dev
+    build-environment:
+      - EXTRA_CFLAGS: --static
+      - LLVM_CONFIG: "/usr/bin/llvm-config-17"
+      - LLVM_STRIP: "/usr/bin/llvm-strip-17"
+    override-build: |
+      # libelf requires zstd on Ubuntu 24.04, this hasn't been addressed
+      # in bpftool yet.
+      sed -i 's/-lelf/-lelf -lzstd/g' src/Makefile
+
+      make -C src -j "$(nproc)"
+
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/sbin/
+      cp ./src/bpftool $CRAFT_PART_INSTALL/usr/local/sbin/
+      chmod 755 $CRAFT_PART_INSTALL/usr/local/sbin/bpftool
+
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/Dockerfile#L20-L23
+  gops:
+    after: [build-deps]
+    plugin: go
+    source-type: git
+    # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/build-gops.sh#L11-L12
+    source: https://github.com/google/gops.git
+    source-tag: v0.3.27
+    source-depth: 1
+    build-environment:
+      - CGO_ENABLED: 0
+    override-build: |
+      go install -ldflags "-s -w" ./...
+
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/Dockerfile#L24-L26
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/download-cni.sh#L13
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/runtime/cni-version.sh#L2
+  cni-plugins:
+    after: [build-deps]
+    plugin: go
+    source-type: git
+    source: https://github.com/containernetworking/plugins.git
+    source-tag: v1.6.0
+    source-depth: 1
+    override-build: |
+      ./build_linux.sh
+      cp -r $CRAFT_PART_BUILD/bin $CRAFT_PART_INSTALL
+    stage:
+      - -bin
+    organize:
+      bin/loopback: cni/loopback
+
+  # https://github.com/cilium/cilium/blob/v1.16.5/images/cilium/Dockerfile#L43-L55
+  hubble-completion:
+    after: [build-deps]
+    plugin: make
+    source-type: git
+    source: "https://github.com/cilium/hubble.git"
+    # NOTE: Hubble has same release versioning scheme as Cilium itself.
+    source-tag: v1.16.5
+    source-depth: 1
+    override-build: |
+      craftctl default
+      mkdir -p $CRAFT_PART_INSTALL/etc/bash_completion.d
+      $CRAFT_PART_INSTALL/usr/local/bin/hubble completion bash > $CRAFT_PART_INSTALL/etc/bash_completion.d/hubble
+
+  cilium:
+    after: [build-deps, builder-img-deps]
+    plugin: make
+    source-type: git
+    source: https://github.com/cilium/cilium.git
+    source-tag: v1.16.5
+    build-packages:
+      - clang-17
+      - llvm-17
+    stage-packages:
+      - clang-17
+      - llvm-17
+    build-environment:
+     - DISABLE_ENVOY_INSTALLATION: 1
+     - PKG_BUILD: 1
+     - NOSTRIP: 0
+     - NOOPT: 0
+    override-build: |
+      make build-container
+      export DESTDIR=$CRAFT_PART_INSTALL
+      make install-container-binary
+      make install-bash-completion
+      make licenses-all
+
+      echo 'install_cni "/usr/bin/cilium-dbg"' >> $CRAFT_PART_BUILD/plugins/cilium-cni/install-plugin.sh
+
+      cp $CRAFT_PART_BUILD/LICENSE.all  $CRAFT_PART_INSTALL/
+      cp $CRAFT_PART_SRC/images/cilium/init-container.sh $CRAFT_PART_INSTALL/
+      cp $CRAFT_PART_BUILD/plugins/cilium-cni/install-plugin.sh $CRAFT_PART_INSTALL/
+      cp $CRAFT_PART_SRC/plugins/cilium-cni/cni-uninstall.sh $CRAFT_PART_INSTALL/
+
+      cp -a $CRAFT_PART_INSTALL/usr/bin/clang-17 $CRAFT_PART_INSTALL/usr/bin/clang
+      cp -a $CRAFT_PART_INSTALL/usr/bin/llc-17 $CRAFT_PART_INSTALL/usr/bin/llc
+      cp -a $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy-17 $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy
+    override-prime: |
+      craftctl default
+      rm -rf /root/.cache/go-build
