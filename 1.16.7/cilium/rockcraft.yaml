@@ -291,7 +291,9 @@ parts:
     source-type: git
     source: "https://github.com/cilium/hubble.git"
     # NOTE: Hubble has same release versioning scheme as Cilium itself.
-    source-tag: v1.16.7
+    # note(eac): no hubble release for v1.16.7, delete this comment when
+    # the hubble version matches the cilium version.
+    source-tag: v1.16.6
     source-depth: 1
     override-build: |
       craftctl default
