@@ -8,7 +8,7 @@ on:
 jobs:
   build-and-push-arch-specifics:
     name: Build Rocks and Push Arch Specific Images
-    uses: canonical/k8s-workflows/.github/workflows/build_rocks.yaml@main
+    uses: canonical/k8s-workflows/.github/workflows/build_rocks.yaml@bump-cache-action
     with:
       owner: ${{ github.repository_owner }}
       trivy-image-config: "trivy.yaml"
