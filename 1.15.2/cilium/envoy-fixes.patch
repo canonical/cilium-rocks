@@ -1,18 +1,20 @@
-From 9d84536cb003b6ab0b4142b142c238ee531860e3 Mon Sep 17 00:00:00 2001
+From f42e3dbcc00d4e73926dd83d63115c0bcb86a784 Mon Sep 17 00:00:00 2001
 From: root <root@rockcraft-cilium-on-amd64-for-amd64-9479005.lxd>
 Date: Thu, 7 Nov 2024 09:51:32 +0000
 Subject: [PATCH] Envoy fixes
 
 * updated checksum
 * workaround to allow running as root
+* Pins golang.org/x/tools in WORKSPACE to avoid bazel's issue with
+  lyft/protoc-gen-star's missing strict dependency.
 ---
- WORKSPACE                                  |  3 ++-
- patches/0005-ci-change-googleurl-dep.patch | 29 ++++++++++++++++++++++
- 2 files changed, 31 insertions(+), 1 deletion(-)
+ WORKSPACE                                  | 12 +++++++++-
+ patches/0005-ci-change-googleurl-dep.patch | 28 ++++++++++++++++++++++
+ 2 files changed, 39 insertions(+), 1 deletion(-)
  create mode 100644 patches/0005-ci-change-googleurl-dep.patch
 
 diff --git a/WORKSPACE b/WORKSPACE
-index 115aefc..723fc53 100644
+index 115aefc7..98cde38d 100644
 --- a/WORKSPACE
 +++ b/WORKSPACE
 @@ -36,6 +36,7 @@ git_repository(
@@ -24,20 +26,33 @@ index 115aefc..723fc53 100644
      # // clang-format off: Envoy's format check: Only repository_locations.bzl may contains URL references
      remote = "https://github.com/envoyproxy/envoy.git",
 @@ -65,7 +66,7 @@ envoy_dependencies()
-
+ 
  load("@envoy//bazel:repositories_extra.bzl", "envoy_dependencies_extra")
-
+ 
 -envoy_dependencies_extra()
 +envoy_dependencies_extra(ignore_root_user_error=True)
-
+ 
  load("@envoy//bazel:python_dependencies.bzl", "envoy_python_dependencies")
-
+ 
+@@ -74,3 +75,12 @@ envoy_python_dependencies()
+ load("@envoy//bazel:dependency_imports.bzl", "envoy_dependency_imports")
+ 
+ envoy_dependency_imports()
++
++load("@bazel_gazelle//:deps.bzl", "go_repository")
++
++# Pin golang.org/x/tools to avoid bazel's issue with lyft/protoc-gen-star's missing strict dependency.
++go_repository(
++    name = "org_golang_x_tools",
++    importpath = "golang.org/x/tools",
++    tag = "v0.1.12"
++)
 diff --git a/patches/0005-ci-change-googleurl-dep.patch b/patches/0005-ci-change-googleurl-dep.patch
 new file mode 100644
-index 0000000..e27ec76
+index 00000000..485acf04
 --- /dev/null
 +++ b/patches/0005-ci-change-googleurl-dep.patch
-@@ -0,0 +1,29 @@
+@@ -0,0 +1,28 @@
 +From a0da603209681f425f1e1fb2c7abddd24f3e2b1f Mon Sep 17 00:00:00 2001
 +From: Alyssa Wilk <alyssar@chromium.org>
 +Date: Wed, 9 Oct 2024 19:30:30 +0000
@@ -66,6 +81,6 @@ index 0000000..e27ec76
 +         extensions = [],
 +--
 +2.43.0
-+
---
-2.34.1
+-- 
+2.43.0
+
