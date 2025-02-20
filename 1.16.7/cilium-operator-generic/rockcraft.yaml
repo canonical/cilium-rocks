@@ -1,7 +1,4 @@
-# NOTE(aznashwan): this was adapted from the existing ROCK definition
-# for release v1.16.3, the outlined changes being referenced from:
-#
-# * in cilium/cilium repo: git diff tags/1.16.3 tags/1.16.5 -- images/operator
+# * in cilium/cilium repo: git diff tags/1.16.5 tags/1.16.7 -- images/operator
 
 name: cilium-operator-generic
 summary: Cilium operator rock for the Cilium CNI.
@@ -100,7 +97,7 @@ parts:
       GRPC_VERSION=cmd/protoc-gen-go-grpc/v1.5.1
       GRPC_VERSION=${GRPC_VERSION#cmd/protoc-gen-go-grpc/}
       go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@${GRPC_VERSION}
-      # git diff tags/1.16.3 tags/1.16.5 -- .//images/builder/install-protoplugins.sh
+      # git diff tags/1.16.5 tags/1.16.7 -- .//images/builder/install-protoplugins.sh
       go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.5
       go install github.com/mfridman/protoc-gen-go-json@v1.5.0
       go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1

@@ -1,8 +1,5 @@
-# NOTE(aznashwan): this was adapted from the existing ROCK definition
-# for release v1.16.3, the outlined changes being referenced from:
-#
-# * in cilium/cilium repo: git diff tags/1.16.3 tags/1.16.5
-# * in cilium/proxy repo: git diff origin/v1.29 origin/v1.30
+# * in cilium/cilium repo: git diff tags/1.16.5 tags/1.16.7
+# * in cilium/proxy repo: git diff origin/v1.30 origin/v1.31
 # * in cilium/image-tools: <no tags to reference, just sourced from `main`>
 
 name: cilium
@@ -164,7 +161,7 @@ parts:
       - -usr/local/include/utf8_range.h
       - -usr/local/include/utf8_validity.h
 
-  # https://github.com/cilium/cilium/blob/v1.16.5/images/builder/install-protoplugins.sh
+  # https://github.com/cilium/cilium/blob/v1.16.7/images/builder/install-protoplugins.sh
   protoplugins:
     plugin: go
     source: ""
