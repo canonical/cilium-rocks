@@ -10,6 +10,20 @@ platforms:
   amd64:
   arm64:
 
+package-repositories:
+  - type: apt
+    formats: [deb-src]
+    components: [main restricted universe multiverse]
+    suites: [noble, noble-updates]
+    key-id: F6ECB3762474EDA9D21B7022871920D1991BC93C
+    url: http://archive.ubuntu.com/ubuntu
+  - type: apt
+    formats: [deb-src]
+    components: [main restricted universe multiverse]
+    suites: [noble-security]
+    key-id: F6ECB3762474EDA9D21B7022871920D1991BC93C
+    url: http://security.ubuntu.com/ubuntu
+
 environment:
   HUBBLE_SERVER: "unix:///var/run/cilium/hubble.sock"
   INITSYSTEM: "SYSTEMD"
@@ -107,55 +121,13 @@ parts:
       - autotools-dev
       - build-essential
       - pkg-config
-
-  # https://github.com/cilium/cilium/blob/v1.17.1/images/builder/Dockerfile#L66-L70
-  # https://github.com/cilium/cilium/blob/v1.17.1/images/builder/build-debug-wrapper.sh
-  debug-wrapper:
-    after: [build-deps, builder-img-deps]
-    plugin: go
-    source-type: git
-    source: https://github.com/cilium/cilium.git
-    source-tag: v1.17.1
-    source-depth: 1
-    source-subdir: images/builder
-    build-environment:
-      - CGO_ENABLED: 0
-    override-build: |
-      cd $CRAFT_PART_SRC_WORK
-      go install github.com/go-delve/delve/cmd/dlv@latest
-      go install -ldflags "-s -w" debug-wrapper.go
-
-  # https://github.com/cilium/cilium/blob/v1.17.1/images/builder/install-protoc.sh
-  protoc:
-    plugin: cmake
-    source-type: git
-    source: https://github.com/protocolbuffers/protobuf.git
-    source-tag: v29.3
-    source-depth: 1
-    source-submodules:
-      - third_party/googletest
-      - third_party/abseil-cpp
-      - third_party/jsoncpp
-    cmake-generator: Ninja
-    build-packages:
-      - g++
-      - git
-    override-build: |
-      cmake $CRAFT_PART_SRC -G Ninja \
-        -DCMAKE_BUILD_TYPE="Release" \
-        -DCMAKE_INSTALL_PREFIX="$CRAFT_PART_INSTALL/usr/local"
-      ninja install
-    stage:
-    - -usr/local/lib
-    - -usr/local/include/absl
-    - -usr/local/include/utf8_range.h
-    - -usr/local/include/utf8_validity.h
+      # https://github.com/cilium/cilium/blob/v1.17.1/images/builder/install-protoc.sh
+      - protobuf-compiler
 
   # https://github.com/cilium/cilium/blob/v1.17.1/images/builder/install-protoplugins.sh
   protoplugins:
-    plugin: go
-    source: ""
-    override-build: |
+    plugin: nil
+    overlay-script: |
       go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
       go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.5
       go install github.com/mfridman/protoc-gen-go-json@v1.5.0
@@ -230,6 +202,7 @@ parts:
       sed -i 's/-lelf/-lelf -lzstd/g' src/Makefile
 
       make -C src -j "$(nproc)"
+      strip src/bpftool
 
       mkdir -p $CRAFT_PART_INSTALL/usr/local/sbin/
       cp ./src/bpftool $CRAFT_PART_INSTALL/usr/local/sbin/
@@ -261,6 +234,7 @@ parts:
     source-depth: 1
     override-build: |
       ./build_linux.sh
+      strip $CRAFT_PART_BUILD/bin/loopback
       cp -r $CRAFT_PART_BUILD/bin $CRAFT_PART_INSTALL
     stage:
       - -bin
@@ -290,9 +264,6 @@ parts:
     build-packages:
       - clang-17
       - llvm-17
-    stage-packages:
-      - clang-17
-      - llvm-17
     build-environment:
      - DISABLE_ENVOY_INSTALLATION: 1
      - PKG_BUILD: 1
@@ -312,9 +283,39 @@ parts:
       cp $CRAFT_PART_BUILD/plugins/cilium-cni/install-plugin.sh $CRAFT_PART_INSTALL/
       cp $CRAFT_PART_SRC/plugins/cilium-cni/cni-uninstall.sh $CRAFT_PART_INSTALL/
 
-      cp -a $CRAFT_PART_INSTALL/usr/bin/clang-17 $CRAFT_PART_INSTALL/usr/bin/clang
-      cp -a $CRAFT_PART_INSTALL/usr/bin/llc-17 $CRAFT_PART_INSTALL/usr/bin/llc
-      cp -a $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy-17 $CRAFT_PART_INSTALL/usr/bin/llvm-objcopy
+      find $CRAFT_PART_INSTALL -type f -executable -exec sh -c 'objcopy --strip-all ${0}' {} \;
     override-prime: |
       craftctl default
       rm -rf /root/.cache/go-build
+
+  llvm:
+    plugin: nil
+    build-packages:
+      # Required for `apt-get source`
+      - dpkg-dev
+    override-pull: |
+      mkdir -p /tmp/llvm
+      cd /tmp/llvm
+      apt-get source -y llvm-toolchain-17
+      cp -r llvm-toolchain-17-*/. $CRAFT_PART_SRC
+    override-build: |
+      apt-get build-dep -y llvm-toolchain-17
+      
+      mkdir -p llvm/build-native
+      cd llvm/build-native
+
+      cmake .. -G "Ninja" \
+        -DLLVM_TARGETS_TO_BUILD="BPF" \
+        -DLLVM_ENABLE_PROJECTS="clang" \
+        -DBUILD_SHARED_LIBS="OFF" \
+        -DCMAKE_BUILD_TYPE="Release" \
+        -DLLVM_BUILD_RUNTIME="OFF" \
+        -DCMAKE_INSTALL_PREFIX="/usr/local"
+
+      ninja clang llc
+
+      strip bin/clang
+      strip bin/llc
+
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/bin
+      cp bin/clang bin/llc $CRAFT_PART_INSTALL/usr/local/bin/
