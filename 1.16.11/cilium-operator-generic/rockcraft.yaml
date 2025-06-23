@@ -1,0 +1,97 @@
+# * in cilium/cilium repo: git diff tags/1.16.7 tags/1.16.11 -- images/operator
+
+name: cilium-operator-generic
+summary: Cilium operator rock for the Cilium CNI.
+description: This rock is a drop in replacement for the cilium/operator-generic image.
+version: "1.16.11"
+license: Apache-2.0
+
+base: bare
+build-base: ubuntu@22.04
+platforms:
+  amd64:
+  arm64:
+
+environment:
+  GOPS_CONFIG_DIR: "/"
+
+services:
+  cilium:
+    command: /usr/bin/cilium-operator-generic
+    override: replace
+    startup: enabled
+
+parts:
+  builder-img-deps:
+    plugin: nil
+    build-packages:
+      - unzip
+      - binutils
+      - coreutils
+      - curl
+      - gcc
+      - git
+      - libc6-dev
+      - make
+
+  build-deps:
+    plugin: nil
+    build-snaps:
+      - go/1.24/stable
+    build-packages:
+      - autoconf
+      - automake
+      - autopoint
+      - autotools-dev
+      - build-essential
+      - pkg-config
+      # https://github.com/cilium/cilium/blob/v1.16.11/images/builder/install-protoc.sh
+      - protobuf-compiler
+
+  # https://github.com/cilium/cilium/blob/v1.16.11/images/builder/install-protoplugins.sh
+  protoplugins:
+    plugin: go
+    source: ""
+    override-build: |
+      GRPC_VERSION=cmd/protoc-gen-go-grpc/v1.5.1
+      GRPC_VERSION=${GRPC_VERSION#cmd/protoc-gen-go-grpc/}
+      go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@${GRPC_VERSION}
+      # git diff tags/1.16.7 tags/1.16.11 -- .//images/builder/install-protoplugins.sh
+      go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6
+      go install github.com/mfridman/protoc-gen-go-json@v1.5.0
+      go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1
+
+  runtime-img-deps:
+    plugin: nil
+    stage-packages:
+      - ca-certificates
+
+  # https://github.com/cilium/cilium/blob/v1.16.11/images/runtime/Dockerfile#L20-L23
+  gops:
+    after: [build-deps]
+    plugin: go
+    source-type: git
+    source: https://github.com/google/gops.git
+    # https://github.com/cilium/cilium/blob/v1.16.11/images/runtime/build-gops.sh#L11-L12
+    source-tag: v0.3.27
+    build-environment:
+      - CGO_ENABLED: 0
+    override-build: |
+      go install -ldflags "-s -w" ./...
+
+  # https://github.com/cilium/cilium/blob/v1.16.11/images/operator/Dockerfile
+  # https://github.com/cilium/cilium/blob/v1.16.11/Makefile#L65-L66
+  cilium-operator:
+    after: [build-deps, builder-img-deps]
+    plugin: make
+    source-type: git
+    source: https://github.com/cilium/cilium.git
+    source-tag: v1.16.11
+    override-build: |
+      export VARIANT="generic"
+      make build-container-operator-$VARIANT
+      export DESTDIR=$CRAFT_PART_INSTALL
+      make install-container-binary-operator-$VARIANT
+      make licenses-all
+
+      cp $CRAFT_PART_BUILD/LICENSE.all  $CRAFT_PART_INSTALL/
