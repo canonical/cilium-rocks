@@ -36,7 +36,7 @@ parts:
     plugin: nil
     build-snaps:
       # https://github.com/cilium/cilium/blob/v1.17.1/images/builder/Dockerfile#L7
-      - go/1.23/stable
+      - go/1.23-fips/stable
     build-packages:
       - autoconf
       - automake
@@ -110,7 +110,9 @@ parts:
     # https://github.com/cilium/cilium/blob/v1.17.1/images/runtime/build-gops.sh#L11-L12
     source-tag: v0.3.27
     build-environment:
-      - CGO_ENABLED: 0
+      - CGO_ENABLED: 1
+      - GOTOOLCHAIN: local
+      - GOEXPERIMENT: opensslcrypto
     override-build: |
       go install -ldflags "-s -w" ./...
 
