@@ -4,8 +4,8 @@ description: This rock is a drop in replacement for the cilium/cilium image.
 version: "1.17.1"
 license: Apache-2.0
 
-base: ubuntu@24.04
-build-base: ubuntu@24.04
+base: ubuntu@22.04
+build-base: ubuntu@22.04
 platforms:
   amd64:
   arm64:
@@ -14,15 +14,21 @@ package-repositories:
   - type: apt
     formats: [deb-src]
     components: [main restricted universe multiverse]
-    suites: [noble, noble-updates]
+    suites: [jammy, jammy-updates]
     key-id: F6ECB3762474EDA9D21B7022871920D1991BC93C
     url: http://archive.ubuntu.com/ubuntu
   - type: apt
     formats: [deb-src]
     components: [main restricted universe multiverse]
-    suites: [noble-security]
+    suites: [jammy-security]
     key-id: F6ECB3762474EDA9D21B7022871920D1991BC93C
     url: http://security.ubuntu.com/ubuntu
+  - type: apt
+    formats: [deb, deb-src]
+    components: [main]
+    suites: [llvm-toolchain-jammy-17]
+    key-id: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
+    url: http://apt.llvm.org/jammy/
 
 environment:
   HUBBLE_SERVER: "unix:///var/run/cilium/hubble.sock"
@@ -113,7 +119,7 @@ parts:
     plugin: nil
     build-snaps:
       # https://github.com/cilium/cilium/blob/v1.17.1/images/builder/Dockerfile#L7
-      - go/1.23/stable
+      - go/1.23-fips/stable
     build-packages:
       - autoconf
       - automake
@@ -163,7 +169,7 @@ parts:
     - OVERRIDE_ALTSTYLE: "none"
     override-prime: |
       craftctl default
-      $CRAFT_PART_BUILD/iptables-wrapper-installer.sh --no-sanity-check
+      bash $CRAFT_PART_BUILD/iptables-wrapper-installer.sh --no-sanity-check
 
   # https://github.com/cilium/cilium/blob/v1.17.1/images/runtime/Dockerfile#L9
   # https://github.com/cilium/cilium/blob/v1.17.1/images/runtime/Dockerfile#L50
@@ -218,7 +224,9 @@ parts:
     source-tag: v0.3.27
     source-depth: 1
     build-environment:
-      - CGO_ENABLED: 0
+      - CGO_ENABLED: 1
+      - GOTOOLCHAIN: local
+      - GOEXPERIMENT: opensslcrypto
     override-build: |
       go install -ldflags "-s -w" ./...
 
@@ -232,6 +240,10 @@ parts:
     source: https://github.com/containernetworking/plugins.git
     source-tag: v1.6.0
     source-depth: 1
+    build-environment:
+      - CGO_ENABLED: 1
+      - GOTOOLCHAIN: local
+      - GOEXPERIMENT: opensslcrypto
     override-build: |
       ./build_linux.sh
       strip $CRAFT_PART_BUILD/bin/loopback
@@ -266,12 +278,20 @@ parts:
       - llvm-17
     build-environment:
      - DISABLE_ENVOY_INSTALLATION: 1
+     - CGO_ENABLED: 1
+     - GOTOOLCHAIN: local
+     - GOEXPERIMENT: opensslcrypto
      - PKG_BUILD: 1
      - NOSTRIP: 0
      - NOOPT: 0
     override-build: |
-      make build-container
       export DESTDIR=$CRAFT_PART_INSTALL
+
+      # NOTE (mateoflorido): Patch Cilium Makefiles to use FIPS-compatible build flags
+      find . -name "Makefile*" -exec sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' {} \;
+
+      make build-container
+
       make install-container-binary
       make install-bash-completion
       make licenses-all
@@ -300,7 +320,7 @@ parts:
       cp -r llvm-toolchain-17-*/. $CRAFT_PART_SRC
     override-build: |
       apt-get build-dep -y llvm-toolchain-17
-      
+
       mkdir -p llvm/build-native
       cd llvm/build-native
 
