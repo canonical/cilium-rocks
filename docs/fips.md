@@ -96,7 +96,7 @@ To build Cilium in FIPS-compliant mode, the following requirements must be met:
 
 1. **Prerequisites**:
    - Ubuntu Pro enabled machine
-   - FIPS **must NOT** enabled
+   - FIPS **must NOT** be enabled
    - Rockcraft installed from the `edge/pro-sources` channel (refer to this
    Discourse [post][discourse post])
 

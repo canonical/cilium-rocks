@@ -8,14 +8,17 @@ on:
 jobs:
   build-and-push-arch-specifics:
     name: Build Rocks and Push Arch Specific Images
-    uses: canonical/k8s-workflows/.github/workflows/build_rocks.yaml@bschimke95/ensure-rockcraft-cache-folder
+    uses: canonical/k8s-workflows/.github/workflows/build_rocks.yaml@mateoflorido/configure-multipass
     with:
+      multipass-cpus: 8
+      multipass-memory: 16GB
+      multipass-disk: 60GB
       owner: ${{ github.repository_owner }}
       trivy-image-config: "trivy.yaml"
       multiarch-awareness: true
       cache-action: ${{ (github.event_name == 'push') && 'save' || 'restore' }}
-      arch-skipping-maximize-build-space: '["arm64"]'
-      platform-labels: '{"arm64": ["self-hosted", "Linux", "ARM64", "jammy"]}'
+      arch-skipping-maximize-build-space: '["arm64", "amd64"]'
+      platform-labels: '{"arm64": ["self-hosted", "linux", "arm64", "jammy", "xlarge"], "amd64": ["self-hosted", "linux", "amd64", "jammy", "xlarge"]}'
       enabled-ubuntu-pro-features: "fips-updates"
       multipass-image: "22.04"
       rockcraft-revisions: '{"amd64": "3494"}'
