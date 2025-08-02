@@ -8,7 +8,7 @@ on:
 jobs:
   build-and-push-arch-specifics:
     name: Build Rocks and Push Arch Specific Images
-    uses: canonical/k8s-workflows/.github/workflows/build_rocks.yaml@mateoflorido/configure-multipass
+    uses: canonical/k8s-workflows/.github/workflows/build_rocks.yaml@main
     with:
       multipass-cpus: 8
       multipass-memory: 16GB
