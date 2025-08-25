@@ -116,6 +116,13 @@ parts:
     override-build: |
       go install -ldflags "-s -w" ./...
 
+  # NOTE(Hue): Inspired from https://discourse.ubuntu.com/t/build-rocks-with-ubuntu-pro-services/57578
+  openssl:
+    plugin: nil
+    stage-packages:
+      - openssl-fips-module-3 # a Pro only FIPS package for openssl
+      - openssl # now automatically selected from fips-preview
+
   # https://github.com/cilium/cilium/blob/v1.17.1/images/operator/Dockerfile
   # https://github.com/cilium/cilium/blob/v1.17.1/Makefile#L65-L66
   cilium-operator:
