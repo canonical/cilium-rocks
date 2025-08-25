@@ -10,9 +10,6 @@ jobs:
     name: Build Rocks and Push Arch Specific Images
     uses: canonical/k8s-workflows/.github/workflows/build_rocks.yaml@main
     with:
-      multipass-cpus: 8
-      multipass-memory: 16GB
-      multipass-disk: 60GB
       owner: ${{ github.repository_owner }}
       trivy-image-config: "trivy.yaml"
       multiarch-awareness: true
@@ -20,8 +17,7 @@ jobs:
       arch-skipping-maximize-build-space: '["arm64", "amd64"]'
       platform-labels: '{"arm64": ["self-hosted", "linux", "arm64", "jammy", "xlarge"], "amd64": ["self-hosted", "linux", "amd64", "jammy", "xlarge"]}'
       enabled-ubuntu-pro-features: "fips-updates"
-      multipass-image: "22.04"
-      rockcraft-revisions: '{"amd64": "3494"}'
+      rockcraft-revisions: '{"amd64": "3494", "arm64": "3547"}'
     secrets:
       UBUNTU_PRO_TOKEN: ${{ secrets.UBUNTU_PRO_TOKEN }}
   scan-images:
