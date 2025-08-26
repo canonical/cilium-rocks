@@ -267,6 +267,13 @@ parts:
       mkdir -p $CRAFT_PART_INSTALL/etc/bash_completion.d
       $CRAFT_PART_INSTALL/usr/local/bin/hubble completion bash > $CRAFT_PART_INSTALL/etc/bash_completion.d/hubble
 
+  # NOTE(Hue): Inspired from https://discourse.ubuntu.com/t/build-rocks-with-ubuntu-pro-services/57578
+  openssl:
+    plugin: nil
+    stage-packages:
+      - openssl-fips-module-3 # a Pro only FIPS package for openssl
+      - openssl # now automatically selected from fips-preview
+
   cilium:
     after: [build-deps, builder-img-deps]
     plugin: make
