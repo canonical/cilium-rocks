@@ -297,7 +297,7 @@ parts:
       # NOTE (mateoflorido): Patch Cilium Makefiles to use FIPS-compatible build flags
       find . -name "Makefile*" -exec sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' {} \;
 
-      make build-container GO_BUILD_LDFLAGS='-linkmode external -extldflags "-Wl,-dynamic-linker,/snap/core22/current/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 -Wl,-rpath,/snap/core22/current/usr/lib/x86_64-linux-gnu"'
+      make build-container GO_BUILD_LDFLAGS='-linkmode external -extldflags "-Wl,-dynamic-linker,/snap/core22/current/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 -Wl,-rpath,/snap/core22/current/usr/lib/x86_64-linux-gnu -lpthread"'
 
       make install-container-binary
       make install-bash-completion
