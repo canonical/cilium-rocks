@@ -36,7 +36,7 @@ environment:
 
 services:
   cilium:
-    command: /usr/bin/cilium-dbg
+    command: /snap/core22/current/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /usr/bin/cilium-dbg
     override: replace
     startup: enabled
 
@@ -297,7 +297,7 @@ parts:
       # NOTE (mateoflorido): Patch Cilium Makefiles to use FIPS-compatible build flags
       find . -name "Makefile*" -exec sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' {} \;
 
-      make build-container
+      make build-container GO_BUILD_LDFLAGS='-linkmode external -extldflags "-Wl,-dynamic-linker,/snap/core22/current/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 -Wl,-rpath,/snap/core22/current/usr/lib/x86_64-linux-gnu"'
 
       make install-container-binary
       make install-bash-completion
@@ -314,6 +314,13 @@ parts:
     override-prime: |
       craftctl default
       rm -rf /root/.cache/go-build
+
+  symlink-ld:
+    plugin: nil
+    override-build: |
+      mkdir -p ${CRAFT_PART_INSTALL}/snap/core22/current/usr/lib/x86_64-linux-gnu
+      ln -sf /lib64/ld-linux-x86-64.so.2 \
+        ${CRAFT_PART_INSTALL}/snap/core22/current/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
 
   llvm:
     plugin: nil
