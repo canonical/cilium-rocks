@@ -307,8 +307,8 @@ parts:
       # NOTE (mateoflorido): Patch Cilium Makefiles to use FIPS-compatible build flags
       find . -name "Makefile*" -exec sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' {} \;
 
-      make build-container SUBDIRS_CILIUM_CONTAINER='cilium-dbg daemon cilium-health bugtool plugins/cilium-cni'
-      make build-container SUBDIRS_CILIUM_CONTAINER='tools/mount tools/sysctlfix' GO_BUILD_LDFLAGS='-linkmode external -extldflags "-Wl,-dynamic-linker,/snap/core22/current/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 -Wl,-rpath,/snap/core22/current/usr/lib/x86_64-linux-gnu"'
+      make build-container SUBDIRS_CILIUM_CONTAINER='cilium-dbg daemon cilium-health bugtool'
+      make build-container SUBDIRS_CILIUM_CONTAINER='tools/mount tools/sysctlfix plugins/cilium-cni' GO_BUILD_LDFLAGS='-linkmode external -extldflags "-Wl,-dynamic-linker,/snap/core22/current/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 -Wl,-rpath,/snap/core22/current/usr/lib/x86_64-linux-gnu"'
 
       # NOTE(reza): build a wrapper binary around cilium-sysctlfix to set the correct LD_LIBRARY_PATH at runtime
       cp -r $CRAFT_STAGE/wrapper  $CRAFT_PART_BUILD/wrapper
