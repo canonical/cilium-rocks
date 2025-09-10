@@ -4,6 +4,9 @@ description: This rock is a drop in replacement for the cilium/cilium image.
 version: "1.17.1"
 license: Apache-2.0
 
+# Note(Reza): We are hardcoding the dynamic libraries path inside the cilium 
+# part binaries. Change them and also the LD_LIBRARY_PATH in the wrapper codebase 
+# accodingly when you change the base snap.
 base: ubuntu@22.04
 build-base: ubuntu@22.04
 platforms:
@@ -36,7 +39,7 @@ environment:
 
 services:
   cilium:
-    command: /snap/core22/current/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /usr/bin/cilium-dbg
+    command: /usr/bin/cilium-dbg
     override: replace
     startup: enabled
 
