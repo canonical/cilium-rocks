@@ -278,11 +278,11 @@ parts:
       - openssl # now automatically selected from fips-preview
 
   wrapper:
-        plugin: dump
-        source: .
-        source-type: local
-        stage:
-        - wrapper
+    plugin: dump
+    source: .
+    source-type: local
+    stage:
+    - wrapper
   
   cilium:
     after: [build-deps, builder-img-deps, wrapper]
@@ -304,17 +304,29 @@ parts:
     override-build: |
       export DESTDIR=$CRAFT_PART_INSTALL
 
+      export LIBRARY_PATH=/snap/core22/current/usr/lib/x86_64-linux-gnu
+      export DYNAMIC_LINKER_PATH=/snap/core22/current/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+
+      if [ "$CRAFT_ARCH_BUILD_FOR" = "arm64" ]; then
+        export LIBRARY_PATH=/snap/core22/current/usr/lib/aarch64-linux-gnu
+        export DYNAMIC_LINKER_PATH=/snap/core22/current/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1
+      fi
+
       # NOTE (mateoflorido): Patch Cilium Makefiles to use FIPS-compatible build flags
       find . -name "Makefile*" -exec sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' {} \;
 
       make build-container SUBDIRS_CILIUM_CONTAINER='cilium-dbg daemon cilium-health bugtool'
-      make build-container SUBDIRS_CILIUM_CONTAINER='tools/mount tools/sysctlfix plugins/cilium-cni' GO_BUILD_LDFLAGS='-linkmode external -extldflags "-Wl,-dynamic-linker,/snap/core22/current/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 -Wl,-rpath,/snap/core22/current/usr/lib/x86_64-linux-gnu"'
+      make build-container SUBDIRS_CILIUM_CONTAINER='tools/mount tools/sysctlfix plugins/cilium-cni' GO_BUILD_LDFLAGS='-linkmode external -extldflags "-Wl,-dynamic-linker,${DYNAMIC_LINKER_PATH} -Wl,-rpath,${LIBRARY_PATH}"'
 
-      # NOTE(reza): build a wrapper binary around cilium-sysctlfix to set the correct LD_LIBRARY_PATH at runtime
+      # NOTE(reza): build a wrapper binary around cilium-sysctlfix and cilium-cni to set the correct LD_LIBRARY_PATH at runtime
       cp -r $CRAFT_STAGE/wrapper  $CRAFT_PART_BUILD/wrapper
-      cp $CRAFT_PART_BUILD/tools/sysctlfix/cilium-sysctlfix $CRAFT_PART_BUILD/wrapper
+      mkdir -p $CRAFT_PART_BUILD/wrapper/bin
+      cp $CRAFT_PART_BUILD/tools/sysctlfix/cilium-sysctlfix $CRAFT_PART_BUILD/wrapper/bin
+      cp $CRAFT_PART_BUILD/plugins/cilium-cni/cilium-cni $CRAFT_PART_BUILD/wrapper/bin
 
-      CGO_ENABLED=0 GOEXPERIMENT= GOTOOLCHAIN=auto go build -o $CRAFT_PART_BUILD/tools/sysctlfix/cilium-sysctlfix wrapper/main.go
+      CGO_ENABLED=0 GOEXPERIMENT= GOTOOLCHAIN=auto go build -o $CRAFT_PART_BUILD/tools/sysctlfix/cilium-sysctlfix -ldflags "-X main.binaryName=cilium-sysctlfix -X main.ldLibraryPath=${LIBRARY_PATH}" wrapper/main.go
+      CGO_ENABLED=0 GOEXPERIMENT= GOTOOLCHAIN=auto go build -o $CRAFT_PART_BUILD/plugins/cilium-cni/cilium-cni -ldflags "-X main.binaryName=cilium-cni -X main.ldLibraryPath=${LIBRARY_PATH}" wrapper/main.go
+
 
       make install-container-binary
       make install-bash-completion

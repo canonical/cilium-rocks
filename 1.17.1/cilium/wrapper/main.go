@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	_ "embed"
 	"fmt"
 	"os"
@@ -8,15 +9,24 @@ import (
 	"path/filepath"
 )
 
-//go:embed cilium-sysctlfix
-var embeddedBinary []byte
+//go:embed bin/*
+var embeddedFiles embed.FS
+
+var binaryName string
+var ldLibraryPath string
 
 func main() {
 
-	tmpDir := os.TempDir()
-	binPath := filepath.Join(tmpDir, "wrapped-binary")
+	binaryData, err := embeddedFiles.ReadFile("bin/" + binaryName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to read embedded binary %q: %v\n", binaryName, err)
+		os.Exit(1)
+	}
 
-	err := os.WriteFile(binPath, embeddedBinary, 0755)
+	tmpDir := os.TempDir()
+	binPath := filepath.Join(tmpDir, binaryName)
+
+	err = os.WriteFile(binPath, binaryData, 0755)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to write embedded binary: %v\n", err)
 		os.Exit(1)
@@ -25,7 +35,7 @@ func main() {
 	// Prepare command with custom environment variables
 	cmd := exec.Command(binPath, os.Args[1:]...)
 	cmd.Env = append(os.Environ(),
-		"LD_LIBRARY_PATH=/snap/core22/current/usr/lib/x86_64-linux-gnu",
+		fmt.Sprintf("LD_LIBRARY_PATH=%s", ldLibraryPath),
 	)
 
 	// Connect stdin/stdout/stderr to this process
