@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 )
 
 //go:embed bin/*
@@ -23,17 +22,30 @@ func main() {
 		os.Exit(1)
 	}
 
-	tmpDir := os.TempDir()
-	binPath := filepath.Join(tmpDir, binaryName)
-
-	err = os.WriteFile(binPath, binaryData, 0755)
+	f, err := os.CreateTemp("", binaryName)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create temp file: %v\n", err)
+		os.Exit(1)
+	}
+	defer os.Remove(f.Name())
+
+	if _, err := f.Write(binaryData); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to write embedded binary: %v\n", err)
 		os.Exit(1)
 	}
 
+	if err := f.Close(); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to close the temp file: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := os.Chmod(f.Name(), 0755); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to close the embedded binary: %v\n", err)
+		os.Exit(1)
+	}
+
 	// Prepare command with custom environment variables
-	cmd := exec.Command(binPath, os.Args[1:]...)
+	cmd := exec.Command(f.Name(), os.Args[1:]...)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("LD_LIBRARY_PATH=%s", ldLibraryPath),
 	)
