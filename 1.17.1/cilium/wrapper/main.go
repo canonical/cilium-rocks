@@ -39,7 +39,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := os.Chmod(f.Name(), 0755); err != nil {
+	if err := os.Chmod(f.Name(), 0700); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to close the embedded binary: %v\n", err)
 		os.Exit(1)
 	}
@@ -57,7 +57,11 @@ func main() {
 
 	// Run the binary
 	if err := cmd.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "%w", err)
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			os.Exit(exitErr.ProcessState.ExitCode())
+		} else {
+			os.Exit(1)
+		}
 	}
 }
