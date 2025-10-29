@@ -55,7 +55,7 @@ parts:
       chmod +x /usr/bin/bazelisk
       ln -sf /usr/bin/bazelisk /usr/bin/bazel
 
-  # https://github.com/cilium/proxy/blob/v1.31/Dockerfile#L17-L24
+  # https://github.com/cilium/proxy/blob/v1.34/Dockerfile#L17-L24
   cilium-envoy:
     after: [bazelisk]
     plugin: make
@@ -320,7 +320,7 @@ parts:
       snap refresh go --channel 1.24-fips/stable
       which go
       go version
-      
+
       export DESTDIR=$CRAFT_PART_INSTALL
 
       export LIBRARY_PATH=/snap/core22/current/usr/lib/x86_64-linux-gnu

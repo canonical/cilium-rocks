@@ -1,28 +1,18 @@
-From 23c0085cbd702452e3341f928ec2231c70988f0f Mon Sep 17 00:00:00 2001
+From 7f2e2b47b7c13f4c7bf0cf5a61b1e7981579dce5 Mon Sep 17 00:00:00 2001
 From: rapour <reza.abbasalipour@canonical.com>
-Date: Wed, 29 Oct 2025 15:59:17 +0400
-Subject: [PATCH] move cel-cpp header definitions, fixing libstdc++-12
+Date: Wed, 29 Oct 2025 18:30:45 +0400
+Subject: [PATCH] fix ignore_root_user_error
 
 Signed-off-by: rapour <reza.abbasalipour@canonical.com>
 ---
- WORKSPACE                                     |   3 +-
- ...0008-cel-cpp-move-header-definitions.patch | 101 ++++++++++++++++++
- 2 files changed, 103 insertions(+), 1 deletion(-)
- create mode 100644 patches/0008-cel-cpp-move-header-definitions.patch
+ WORKSPACE | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/WORKSPACE b/WORKSPACE
-index 6439f904..ed373bee 100644
+index 6439f904..f7003252 100644
 --- a/WORKSPACE
 +++ b/WORKSPACE
-@@ -44,6 +44,7 @@ git_repository(
-         "@//patches:0005-thread_local-reset-slot-in-worker-threads-first.patch",
-         "@//patches:0006-http-header-expose-attribute.patch",
-         "@//patches:0007-liburing-arm-build.patch",
-+        "@//patches:0008-cel-cpp-move-header-definitions.patch",
-     ],
-     # // clang-format off: Envoy's format check: Only repository_locations.bzl may contains URL references
-     remote = "https://github.com/envoyproxy/envoy.git",
-@@ -77,7 +78,7 @@ envoy_dependencies()
+@@ -77,7 +77,7 @@ envoy_dependencies()
  
  load("@envoy//bazel:repositories_extra.bzl", "envoy_dependencies_extra")
  
@@ -31,112 +21,5 @@ index 6439f904..ed373bee 100644
  
  load("@envoy//bazel:python_dependencies.bzl", "envoy_python_dependencies")
  
-diff --git a/patches/0008-cel-cpp-move-header-definitions.patch b/patches/0008-cel-cpp-move-header-definitions.patch
-new file mode 100644
-index 00000000..faf96a83
---- /dev/null
-+++ b/patches/0008-cel-cpp-move-header-definitions.patch
-@@ -0,0 +1,101 @@
-+From 1d85e06a309d457010797aadc72bc7141c16b070 Mon Sep 17 00:00:00 2001
-+From: root <root@rockcraft-cilium-on-amd64-for-amd64-9854116.lxd>
-+Date: Thu, 16 Jan 2025 08:05:50 +0000
-+Subject: [PATCH] cel-cpp: move header definitions
-+
-+---
-+ bazel/cel-cpp-header-defs.patch | 70 +++++++++++++++++++++++++++++++++
-+ bazel/repositories.bzl          |  1 +
-+ 2 files changed, 71 insertions(+)
-+ create mode 100644 bazel/cel-cpp-header-defs.patch
-+
-+diff --git a/bazel/cel-cpp-header-defs.patch b/bazel/cel-cpp-header-defs.patch
-+new file mode 100644
-+index 0000000..bab38c2
-+--- /dev/null
-++++ b/bazel/cel-cpp-header-defs.patch
-+@@ -0,0 +1,70 @@
-++From 18cf5685e93fb8c07c807d913fabe9d1b54db87f Mon Sep 17 00:00:00 2001
-++From: CEL Dev Team <cel-dev@google.com>
-++Date: Thu, 7 Mar 2024 08:13:00 -0800
-++Subject: [PATCH] Move implementations from the header file.
-++
-++PiperOrigin-RevId: 613588519
-++---
-++ common/json.cc | 11 +++++++++++
-++ common/json.h  | 11 +++--------
-++ 2 files changed, 14 insertions(+), 8 deletions(-)
-++
-++diff --git a/common/json.cc b/common/json.cc
-++index 630a267ca..7946019bc 100644
-++--- a/common/json.cc
-+++++ b/common/json.cc
-++@@ -68,6 +68,17 @@ Json JsonBytes(const absl::Cord& value) {
-++   return JsonBytes(absl::string_view(static_cast<std::string>(value)));
-++ }
-++
-+++bool JsonArrayBuilder::empty() const { return impl_.get().empty(); }
-+++
-+++bool JsonArray::empty() const { return impl_.get().empty(); }
-+++
-+++JsonArray::JsonArray(internal::CopyOnWrite<Container> impl)
-+++    : impl_(std::move(impl)) {
-+++  if (impl_.get().empty()) {
-+++    impl_ = Empty();
-+++  }
-+++}
-+++
-++ namespace {
-++
-++ using internal::ProtoWireEncoder;
-++diff --git a/common/json.h b/common/json.h
-++index fe72492ce..77f0bd29d 100644
-++--- a/common/json.h
-+++++ b/common/json.h
-++@@ -124,7 +124,7 @@ class JsonArrayBuilder {
-++   JsonArrayBuilder& operator=(const JsonArrayBuilder&) = delete;
-++   JsonArrayBuilder& operator=(JsonArrayBuilder&&) = default;
-++
-++-  bool empty() const { return impl_.get().empty(); }
-+++  bool empty() const;
-++
-++   size_type size() const;
-++
-++@@ -187,7 +187,7 @@ class ABSL_ATTRIBUTE_TRIVIAL_ABI JsonArray final {
-++   JsonArray& operator=(const JsonArray&) = default;
-++   JsonArray& operator=(JsonArray&&) = default;
-++
-++-  bool empty() const { return impl_.get().empty(); }
-+++  bool empty() const;
-++
-++   size_type size() const;
-++
-++@@ -223,12 +223,7 @@ class ABSL_ATTRIBUTE_TRIVIAL_ABI JsonArray final {
-++
-++   static internal::CopyOnWrite<Container> Empty();
-++
-++-  explicit JsonArray(internal::CopyOnWrite<Container> impl)
-++-      : impl_(std::move(impl)) {
-++-    if (impl_.get().empty()) {
-++-      impl_ = Empty();
-++-    }
-++-  }
-+++  explicit JsonArray(internal::CopyOnWrite<Container> impl);
-++
-++   internal::CopyOnWrite<Container> impl_;
-++ };
-++
-+diff --git a/bazel/repositories.bzl b/bazel/repositories.bzl
-+index 3a82f6c..3d70304 100644
-+--- a/bazel/repositories.bzl
-++++ b/bazel/repositories.bzl
-+@@ -710,6 +710,7 @@ def _com_google_cel_cpp():
-+         patches = [
-+             "@envoy//bazel:cel-cpp.patch",
-+             "@envoy//bazel:cel-cpp-memory.patch",
-++            "@envoy//bazel:cel-cpp-header-defs.patch",
-+         ],
-+         patch_args = ["-p1"],
-+     )
-+--
-+2.43.0
 -- 
 2.43.0
