@@ -261,8 +261,10 @@ parts:
     plugin: make
     source-type: git
     source: "https://github.com/cilium/hubble.git"
-    # NOTE: Hubble has same release versioning scheme as Cilium itself.
-    source-tag: v1.17.9
+    # NOTE: Hubble has same release versioning scheme as Cilium itself. 
+    # The Hubble CLI is backward compatible with all supported Cilium releases. 
+    # For this reason, only the latest Hubble CLI version is maintained.
+    source-tag: v1.18.3
     source-depth: 1
     override-build: |
       craftctl default
