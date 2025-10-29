@@ -301,6 +301,8 @@ parts:
      - NOSTRIP: 0
      - NOOPT: 0
     override-build: |
+      which go
+      go version
       export DESTDIR=$CRAFT_PART_INSTALL
 
       export LIBRARY_PATH=/snap/core22/current/usr/lib/x86_64-linux-gnu
