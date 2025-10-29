@@ -225,14 +225,15 @@ parts:
     source: https://github.com/google/gops.git
     source-tag: v0.3.27
     source-depth: 1
-    build-snaps:
-      # https://github.com/cilium/cilium/blob/v1.17.9/images/builder/Dockerfile#L7
-      - go/1.24-fips/stable
     build-environment:
       - CGO_ENABLED: 1
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
     override-build: |
+      # NOTE: (mateoflorido) Something is changing the requested version
+      # in the build-snaps section.
+      snap refresh go --channel 1.24-fips/stable
+      
       go install -ldflags "-s -w" ./...
 
   # https://github.com/cilium/cilium/blob/v1.17.9/images/runtime/Dockerfile#L24-L26
@@ -245,14 +246,15 @@ parts:
     source: https://github.com/containernetworking/plugins.git
     source-tag: v1.7.1
     source-depth: 1
-    build-snaps:
-      # https://github.com/cilium/cilium/blob/v1.17.9/images/builder/Dockerfile#L7
-      - go/1.24-fips/stable
     build-environment:
       - CGO_ENABLED: 1
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
     override-build: |
+      # NOTE: (mateoflorido) Something is changing the requested version
+      # in the build-snaps section.
+      snap refresh go --channel 1.24-fips/stable
+
       ./build_linux.sh
       strip $CRAFT_PART_BUILD/bin/loopback
       cp -r $CRAFT_PART_BUILD/bin $CRAFT_PART_INSTALL
@@ -272,10 +274,11 @@ parts:
     # For this reason, only the latest Hubble CLI version is maintained.
     source-tag: v1.18.3
     source-depth: 1
-    build-snaps:
-      # https://github.com/cilium/cilium/blob/v1.17.9/images/builder/Dockerfile#L7
-      - go/1.24-fips/stable
     override-build: |
+      # NOTE: (mateoflorido) Something is changing the requested version
+      # in the build-snaps section.
+      snap refresh go --channel 1.24-fips/stable
+
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/etc/bash_completion.d
       $CRAFT_PART_INSTALL/usr/local/bin/hubble completion bash > $CRAFT_PART_INSTALL/etc/bash_completion.d/hubble
@@ -300,9 +303,6 @@ parts:
     source-type: git
     source: https://github.com/cilium/cilium.git
     source-tag: v1.17.9
-    build-snaps:
-      # https://github.com/cilium/cilium/blob/v1.17.9/images/builder/Dockerfile#L7
-      - go/1.24-fips/stable
     build-packages:
       - clang-17
       - llvm-17
@@ -315,8 +315,12 @@ parts:
      - NOSTRIP: 0
      - NOOPT: 0
     override-build: |
+      # NOTE: (mateoflorido) Something is changing the requested version
+      # in the build-snaps section.
+      snap refresh go --channel 1.24-fips/stable
       which go
       go version
+      
       export DESTDIR=$CRAFT_PART_INSTALL
 
       export LIBRARY_PATH=/snap/core22/current/usr/lib/x86_64-linux-gnu
