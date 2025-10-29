@@ -94,8 +94,8 @@ parts:
     override-build: |
       export PKG_BUILD=1
       export DESTDIR=$CRAFT_PART_INSTALL
-      export EMAIL=root@localhost
-      git am --ignore-whitespace $CRAFT_PROJECT_DIR/envoy-fixes.patch
+      # export EMAIL=root@localhost
+      # git am --ignore-whitespace $CRAFT_PROJECT_DIR/envoy-fixes.patch
 
       make -C proxylib all
       mkdir -p $CRAFT_PART_INSTALL/usr/lib/
@@ -225,6 +225,9 @@ parts:
     source: https://github.com/google/gops.git
     source-tag: v0.3.27
     source-depth: 1
+    build-snaps:
+      # https://github.com/cilium/cilium/blob/v1.17.9/images/builder/Dockerfile#L7
+      - go/1.24-fips/stable
     build-environment:
       - CGO_ENABLED: 1
       - GOTOOLCHAIN: local
@@ -242,6 +245,9 @@ parts:
     source: https://github.com/containernetworking/plugins.git
     source-tag: v1.7.1
     source-depth: 1
+    build-snaps:
+      # https://github.com/cilium/cilium/blob/v1.17.9/images/builder/Dockerfile#L7
+      - go/1.24-fips/stable
     build-environment:
       - CGO_ENABLED: 1
       - GOTOOLCHAIN: local
@@ -266,6 +272,9 @@ parts:
     # For this reason, only the latest Hubble CLI version is maintained.
     source-tag: v1.18.3
     source-depth: 1
+    build-snaps:
+      # https://github.com/cilium/cilium/blob/v1.17.9/images/builder/Dockerfile#L7
+      - go/1.24-fips/stable
     override-build: |
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/etc/bash_completion.d
