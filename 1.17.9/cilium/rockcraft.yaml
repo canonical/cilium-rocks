@@ -291,6 +291,9 @@ parts:
     source-type: git
     source: https://github.com/cilium/cilium.git
     source-tag: v1.17.9
+    build-snaps:
+      # https://github.com/cilium/cilium/blob/v1.17.9/images/builder/Dockerfile#L7
+      - go/1.24-fips/stable
     build-packages:
       - clang-17
       - llvm-17
