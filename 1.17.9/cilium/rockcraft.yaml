@@ -94,8 +94,8 @@ parts:
     override-build: |
       export PKG_BUILD=1
       export DESTDIR=$CRAFT_PART_INSTALL
-      # export EMAIL=root@localhost
-      # git am --ignore-whitespace $CRAFT_PROJECT_DIR/envoy-fixes.patch
+      export EMAIL=root@localhost
+      git am --ignore-whitespace $CRAFT_PROJECT_DIR/envoy-fixes.patch
 
       make -C proxylib all
       mkdir -p $CRAFT_PART_INSTALL/usr/lib/
