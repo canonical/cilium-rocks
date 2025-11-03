@@ -132,6 +132,7 @@ parts:
     source: https://github.com/cilium/cilium.git
     source-tag: v1.17.1
     override-build: |
+      snap refresh go --channel 1.23-fips/stable
       export VARIANT="generic"
       make build-container-operator-$VARIANT
       export DESTDIR=$CRAFT_PART_INSTALL
