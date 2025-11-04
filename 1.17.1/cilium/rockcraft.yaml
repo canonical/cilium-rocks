@@ -306,6 +306,7 @@ parts:
      - NOOPT: 0
     override-build: |
       snap refresh go --channel 1.23-fips/stable
+      snap info go
 
       export DESTDIR=$CRAFT_PART_INSTALL
 
