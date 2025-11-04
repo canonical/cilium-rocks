@@ -231,6 +231,7 @@ parts:
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
     override-build: |
+      snap refresh go --channel 1.23-fips/stable
       go install -ldflags "-s -w" ./...
 
   # https://github.com/cilium/cilium/blob/v1.17.1/images/runtime/Dockerfile#L24-L26
@@ -248,6 +249,7 @@ parts:
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
     override-build: |
+      snap refresh go --channel 1.23-fips/stable
       ./build_linux.sh
       strip $CRAFT_PART_BUILD/bin/loopback
       cp -r $CRAFT_PART_BUILD/bin $CRAFT_PART_INSTALL
@@ -266,6 +268,7 @@ parts:
     source-tag: v1.17.1
     source-depth: 1
     override-build: |
+      snap refresh go --channel 1.23-fips/stable
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/etc/bash_completion.d
       $CRAFT_PART_INSTALL/usr/local/bin/hubble completion bash > $CRAFT_PART_INSTALL/etc/bash_completion.d/hubble

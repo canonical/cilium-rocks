@@ -114,6 +114,7 @@ parts:
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
     override-build: |
+      snap refresh go --channel 1.23-fips/stable
       go install -ldflags "-s -w" ./...
 
   # NOTE(Hue): Inspired from https://discourse.ubuntu.com/t/build-rocks-with-ubuntu-pro-services/57578
