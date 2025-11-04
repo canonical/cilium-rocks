@@ -134,7 +134,7 @@ parts:
       # https://github.com/cilium/cilium/blob/v1.17.9/images/builder/install-protoc.sh
       - protobuf-compiler
 
-  # https://github.com/cilium/cilium/blob/v1.17.1/images/builder/install-protoplugins.sh
+  # https://github.com/cilium/cilium/blob/v1.17.9/images/builder/install-protoplugins.sh
   protoplugins:
     plugin: nil
     overlay-script: |
