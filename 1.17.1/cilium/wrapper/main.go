@@ -44,7 +44,7 @@ func run() (exitCode int) {
 	}
 
 	if err := os.Chmod(f.Name(), 0700); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to close the embedded binary: %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to chmod the embedded binary: %v\n", err)
 		return 1
 	}
 
