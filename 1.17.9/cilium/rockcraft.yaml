@@ -4,8 +4,8 @@ description: This rock is a drop in replacement for the cilium/cilium image.
 version: "1.17.9"
 license: Apache-2.0
 
-# Note(Reza): We are hardcoding the dynamic libraries path inside the cilium 
-# part binaries. Change them and also the LD_LIBRARY_PATH in the wrapper codebase 
+# Note(Reza): We are hardcoding the dynamic libraries path inside the cilium
+# part binaries. Change them and also the LD_LIBRARY_PATH in the wrapper codebase
 # accodingly when you change the base snap.
 base: ubuntu@22.04
 build-base: ubuntu@22.04
@@ -226,14 +226,15 @@ parts:
     source-tag: v0.3.27
     source-depth: 1
     build-environment:
-      - CGO_ENABLED: 1
+      - CGO_ENABLED: "1"
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
+      - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
     override-build: |
       # NOTE: (mateoflorido) Something is changing the requested version
       # in the build-snaps section.
       snap refresh go --channel 1.24-fips/stable
-      
+
       go install -ldflags "-s -w" ./...
 
   # https://github.com/cilium/cilium/blob/v1.17.9/images/runtime/Dockerfile#L24-L26
@@ -247,9 +248,10 @@ parts:
     source-tag: v1.7.1
     source-depth: 1
     build-environment:
-      - CGO_ENABLED: 1
+      - CGO_ENABLED: "1"
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
+      - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
     override-build: |
       # NOTE: (mateoflorido) Something is changing the requested version
       # in the build-snaps section.
@@ -269,8 +271,8 @@ parts:
     plugin: make
     source-type: git
     source: "https://github.com/cilium/hubble.git"
-    # NOTE: Hubble has same release versioning scheme as Cilium itself. 
-    # The Hubble CLI is backward compatible with all supported Cilium releases. 
+    # NOTE: Hubble has same release versioning scheme as Cilium itself.
+    # The Hubble CLI is backward compatible with all supported Cilium releases.
     # For this reason, only the latest Hubble CLI version is maintained.
     source-tag: v1.18.3
     source-depth: 1
@@ -296,7 +298,7 @@ parts:
     source-type: local
     stage:
     - wrapper
-  
+
   cilium:
     after: [build-deps, builder-img-deps, wrapper]
     plugin: make
@@ -307,13 +309,14 @@ parts:
       - clang-17
       - llvm-17
     build-environment:
-     - DISABLE_ENVOY_INSTALLATION: 1
-     - CGO_ENABLED: 1
+     - DISABLE_ENVOY_INSTALLATION: "1"
+     - CGO_ENABLED: "1"
      - GOTOOLCHAIN: local
      - GOEXPERIMENT: opensslcrypto
-     - PKG_BUILD: 1
-     - NOSTRIP: 0
-     - NOOPT: 0
+     - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
+     - PKG_BUILD: "1"
+     - NOSTRIP: "0"
+     - NOOPT: "0"
     override-build: |
       # NOTE: (mateoflorido) Something is changing the requested version
       # in the build-snaps section.
@@ -371,7 +374,7 @@ parts:
         mkdir -p ${CRAFT_PART_INSTALL}/snap/core22/current/usr/lib/aarch64-linux-gnu
         ln -sf /lib/ld-linux-aarch64.so.1 \
           ${CRAFT_PART_INSTALL}/snap/core22/current/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1
-      else 
+      else
         mkdir -p ${CRAFT_PART_INSTALL}/snap/core22/current/usr/lib/x86_64-linux-gnu
         ln -sf /lib64/ld-linux-x86-64.so.2 \
           ${CRAFT_PART_INSTALL}/snap/core22/current/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
