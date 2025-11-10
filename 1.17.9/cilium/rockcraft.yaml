@@ -229,7 +229,7 @@ parts:
       - CGO_ENABLED: "1"
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
-      - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kd"
+      - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
     override-build: |
       # NOTE: (mateoflorido) Something is changing the requested version
       # in the build-snaps section.
@@ -251,7 +251,7 @@ parts:
       - CGO_ENABLED: "1"
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
-      - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kd"
+      - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
     override-build: |
       # NOTE: (mateoflorido) Something is changing the requested version
       # in the build-snaps section.
@@ -313,7 +313,7 @@ parts:
      - CGO_ENABLED: "1"
      - GOTOOLCHAIN: local
      - GOEXPERIMENT: opensslcrypto
-     - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kd"
+     - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
      - PKG_BUILD: "1"
      - NOSTRIP: "0"
      - NOOPT: "0"
