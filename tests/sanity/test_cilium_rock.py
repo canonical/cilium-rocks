@@ -50,12 +50,18 @@ def test_fips(image_version, GOFIPS):
     ).image
     entrypoint = shlex.split(IMAGE_ENTRYPOINT)
 
+    rockcraft_yaml = (
+        (REPO_PATH / image_version / "cilium" / "rockcraft.yaml").read_text().lower()
+    )
+
+    if GOFIPS == 1 and not fips_util.is_fips_rock(rockcraft_yaml):
+        pytest.skip("Skipping because this version of rock is not built for FIPS")
+
     docker_env = ["-e", f"GOFIPS={GOFIPS}"]
     process = docker_util.run_in_docker(
         image, entrypoint, check_exit_code=False, docker_args=docker_env
     )
 
-    rockcraft_yaml = (REPO_PATH / image_version / "cilium" / "rockcraft.yaml").read_text().lower()
     expected_returncode, expected_error = fips_util.fips_expectations(
         rockcraft_yaml, GOFIPS
     )
