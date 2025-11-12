@@ -144,8 +144,11 @@ parts:
     override-build: |
       snap refresh go --channel 1.24-fips/stable
 
+      # NOTE (mateoflorido): Patch Cilium Makefiles to use FIPS-compatible build flags
+      find . -name "Makefile*" -exec sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' {} \;
+
       export VARIANT="generic"
-      make build-container-operator-$VARIANT
+      make build-container-operator-$VARIANT GO_BUILD_LDFLAGS='-linkmode external'
       export DESTDIR=$CRAFT_PART_INSTALL
       make install-container-binary-operator-$VARIANT
       make licenses-all
