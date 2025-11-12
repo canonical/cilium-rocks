@@ -138,6 +138,8 @@ parts:
   protoplugins:
     plugin: nil
     overlay-script: |
+      snap refresh go --channel 1.24-fips/stable
+
       go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
       go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.10
       go install github.com/mfridman/protoc-gen-go-json@v1.5.0
@@ -321,8 +323,6 @@ parts:
       # NOTE: (mateoflorido) Something is changing the requested version
       # in the build-snaps section.
       snap refresh go --channel 1.24-fips/stable
-      which go
-      go version
 
       export DESTDIR=$CRAFT_PART_INSTALL
 

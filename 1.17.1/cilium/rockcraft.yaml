@@ -137,6 +137,8 @@ parts:
   protoplugins:
     plugin: nil
     overlay-script: |
+      snap refresh go --channel 1.23-fips/stable
+
       go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
       go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.5
       go install github.com/mfridman/protoc-gen-go-json@v1.5.0
@@ -230,7 +232,11 @@ parts:
       - CGO_ENABLED: 1
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
+      - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
+
     override-build: |
+      snap refresh go --channel 1.23-fips/stable
+
       go install -ldflags "-s -w" ./...
 
   # https://github.com/cilium/cilium/blob/v1.17.1/images/runtime/Dockerfile#L24-L26
@@ -247,7 +253,10 @@ parts:
       - CGO_ENABLED: 1
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
+      - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
     override-build: |
+      snap refresh go --channel 1.23-fips/stable
+
       ./build_linux.sh
       strip $CRAFT_PART_BUILD/bin/loopback
       cp -r $CRAFT_PART_BUILD/bin $CRAFT_PART_INSTALL
@@ -266,6 +275,8 @@ parts:
     source-tag: v1.17.1
     source-depth: 1
     override-build: |
+      snap refresh go --channel 1.23-fips/stable
+
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/etc/bash_completion.d
       $CRAFT_PART_INSTALL/usr/local/bin/hubble completion bash > $CRAFT_PART_INSTALL/etc/bash_completion.d/hubble
@@ -298,10 +309,13 @@ parts:
      - CGO_ENABLED: 1
      - GOTOOLCHAIN: local
      - GOEXPERIMENT: opensslcrypto
+     - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
      - PKG_BUILD: 1
      - NOSTRIP: 0
      - NOOPT: 0
     override-build: |
+      snap refresh go --channel 1.23-fips/stable
+
       export DESTDIR=$CRAFT_PART_INSTALL
 
       export LIBRARY_PATH=/snap/core22/current/usr/lib/x86_64-linux-gnu
