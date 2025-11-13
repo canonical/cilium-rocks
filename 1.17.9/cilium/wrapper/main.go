@@ -13,6 +13,7 @@ var embeddedFiles embed.FS
 
 var binaryName string
 var ldLibraryPath string
+var opensslmodulesPath string
 
 func run() (exitCode int) {
 
@@ -52,6 +53,7 @@ func run() (exitCode int) {
 	cmd := exec.Command(f.Name(), os.Args[1:]...)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("LD_LIBRARY_PATH=%s", ldLibraryPath),
+		fmt.Sprint("OPENSSL_MODULES=%s", opensslmodulesPath),
 	)
 
 	// Connect stdin/stdout/stderr to this process

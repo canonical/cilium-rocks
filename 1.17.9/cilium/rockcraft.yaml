@@ -328,10 +328,12 @@ parts:
 
       export LIBRARY_PATH=/snap/core22/current/usr/lib/x86_64-linux-gnu
       export DYNAMIC_LINKER_PATH=/snap/core22/current/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+      export OPENSSL_MODULES_PATH=/snap/core22/current/usr/lib/x86_64-linux-gnu/ossl-modules-3
 
       if [ "$CRAFT_ARCH_BUILD_FOR" = "arm64" ]; then
         export LIBRARY_PATH=/snap/core22/current/usr/lib/aarch64-linux-gnu
         export DYNAMIC_LINKER_PATH=/snap/core22/current/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1
+        export OPENSSL_MODULES_PATH=/snap/core22/current/usr/lib/aarch64-linux-gnu/ossl-modules-3
       fi
 
       # NOTE (mateoflorido): Patch Cilium Makefiles to use FIPS-compatible build flags
@@ -346,9 +348,9 @@ parts:
       cp $CRAFT_PART_BUILD/tools/sysctlfix/cilium-sysctlfix $CRAFT_PART_BUILD/plugins/cilium-cni/cilium-cni $CRAFT_PART_BUILD/cilium-dbg/cilium-dbg $CRAFT_PART_BUILD/wrapper/bin
 
 
-      CGO_ENABLED=0 GOEXPERIMENT= GOTOOLCHAIN=auto go build -o $CRAFT_PART_BUILD/tools/sysctlfix/cilium-sysctlfix -ldflags "-X main.binaryName=cilium-sysctlfix -X main.ldLibraryPath=${LIBRARY_PATH}" wrapper/main.go
-      CGO_ENABLED=0 GOEXPERIMENT= GOTOOLCHAIN=auto go build -o $CRAFT_PART_BUILD/plugins/cilium-cni/cilium-cni -ldflags "-X main.binaryName=cilium-cni -X main.ldLibraryPath=${LIBRARY_PATH}" wrapper/main.go
-      CGO_ENABLED=0 GOEXPERIMENT= GOTOOLCHAIN=auto go build -o $CRAFT_PART_BUILD/cilium-dbg/cilium-dbg -ldflags "-X main.binaryName=cilium-dbg -X main.ldLibraryPath=${LIBRARY_PATH}" wrapper/main.go
+      CGO_ENABLED=0 GOEXPERIMENT= GOTOOLCHAIN=auto go build -o $CRAFT_PART_BUILD/tools/sysctlfix/cilium-sysctlfix -ldflags "-X main.binaryName=cilium-sysctlfix -X main.ldLibraryPath=${LIBRARY_PATH} -X main.opensslmodulesPath=${OPENSSL_MODULES_PATH}" wrapper/main.go
+      CGO_ENABLED=0 GOEXPERIMENT= GOTOOLCHAIN=auto go build -o $CRAFT_PART_BUILD/plugins/cilium-cni/cilium-cni -ldflags "-X main.binaryName=cilium-cni -X main.ldLibraryPath=${LIBRARY_PATH} -X main.opensslmodulesPath=${OPENSSL_MODULES_PATH}" wrapper/main.go
+      CGO_ENABLED=0 GOEXPERIMENT= GOTOOLCHAIN=auto go build -o $CRAFT_PART_BUILD/cilium-dbg/cilium-dbg -ldflags "-X main.binaryName=cilium-dbg -X main.ldLibraryPath=${LIBRARY_PATH} -X main.opensslmodulesPath=${OPENSSL_MODULES_PATH}" wrapper/main.go
 
 
       make install-container-binary

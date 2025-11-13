@@ -76,6 +76,26 @@ enforcement
 (SDS) or Network Policy Discovery Service (NPDS)
 - **Cryptographic Processing**: TLS handshakes and certificate validation
 
+### Cilium Wrapper Binary
+
+The Cilium helm chart, which is used to deploy Cilium on a Kubernetes cluster 
+and utilizes this image, has a few init containers that copy binaries from 
+inside the image to the host and run them with the host namespace. Since we 
+are building these binaries with dynamic linking, to make sure the dependencies 
+are always present on the machines, we have linked the binaries against 
+libraries from the `core22` snap package using `RPATH` in build time and 
+`LD_LIBRARY_PATH` at runtime. We also have modified the binaries to use 
+the dynamic linker from `core22` for compatibility. 
+
+However, since the OpenSSL shipped with the `core22` snap package is using the 
+modules like the FIPS module from the host, this modification doesn't work out 
+of the box. To make sure we are using the right FIPS module when calling the 
+OpenSSL library, we also provide the FIPS module path shipped with `core22` 
+using the `OPENSSL_MODULES` environment variable at runtime. 
+
+To provide the runtime environment variables, binaries are embedded inside a 
+wrapper binary that provides these values when the binary is executed.
+
 ## FIPS Compliance Status
 
 ### Implementation Dependencies
