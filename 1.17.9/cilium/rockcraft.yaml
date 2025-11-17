@@ -377,13 +377,13 @@ parts:
         ln -sf /lib/ld-linux-aarch64.so.1 \
           ${CRAFT_PART_INSTALL}/snap/core22/current/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1
         ln -sf /usr/lib/aarch64-linux-gnu/ossl-modules-3 \
-          ${CRAFT_PART_INSTALL}/snap/core22/current/usr/lib/aarch64-linux-gnu/ossl-modules-3"
+          ${CRAFT_PART_INSTALL}/snap/core22/current/usr/lib/aarch64-linux-gnu/ossl-modules-3
       else
         mkdir -p ${CRAFT_PART_INSTALL}/snap/core22/current/usr/lib/x86_64-linux-gnu
         ln -sf /lib64/ld-linux-x86-64.so.2 \
           ${CRAFT_PART_INSTALL}/snap/core22/current/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
         ln -sf /usr/lib/x86_64-linux-gnu/ossl-modules-3 \
-          ${CRAFT_PART_INSTALL}/snap/core22/current/usr/lib/x86_64-linux-gnu/ossl-modules-3"
+          ${CRAFT_PART_INSTALL}/snap/core22/current/usr/lib/x86_64-linux-gnu/ossl-modules-3
       fi
   
   llvm:
