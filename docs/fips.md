@@ -38,13 +38,13 @@ IPsec/WireGuard encryption, TLS termination and inspection, and API
 authentication. FIPS compliance depends on the cryptographic libraries, Go
 runtime, and build environment used for these components.
 
-Wireguard is not fips compliant due to its usage of non-certified cryptography algorithms 
-such as `ChaCha20Poly1305`. Usage of this feature would result in a non-fips compliant 
+Wireguard is not FIPS-compliant due to its usage of non-certified cryptography algorithms 
+such as `ChaCha20Poly1305`. Usage of this feature would result in a non-FIPS-compliant
 setup of Cilium.
 
 For Canonical Kubernetes, this mode is not enabled by default and there is no 
 provided/supported UX for turning this on. Based on this our current setup of Cilium 
-remains fips compliant.
+remains FIPS-compliant.
 
 ### Cilium Agent Component
 
