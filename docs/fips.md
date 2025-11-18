@@ -42,9 +42,8 @@ Wireguard is not FIPS-compliant due to its usage of non-certified cryptography a
 such as `ChaCha20Poly1305`. Usage of this feature would result in a non-FIPS-compliant
 setup of Cilium.
 
-For Canonical Kubernetes, this mode is not enabled by default and there is no 
-provided/supported UX for turning this on. Based on this our current setup of Cilium 
-remains FIPS-compliant.
+For Canonical Kubernetes, there is no supported path to enable the feature. 
+Therefore, deployments using the default Cilium configurations are FIPS-compliant.
 
 ### Cilium Agent Component
 
