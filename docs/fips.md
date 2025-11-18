@@ -129,17 +129,17 @@ parts:
 
 ### Required Build Modifications
 
-To build Cilium in FIPS-compliant mode, the following requirements must be met:
+**Prerequisites**:
 
-1. **Prerequisites**:
-   - a `rockcraft` version that contains the pro feature. (refer to this
-   Discourse [post][discourse post])
+- a `rockcraft` version that allows building with Ubuntu Pro services (refer to [this discourse post]).
 
-2. **Building the Image**:
-  Use the following command to build the image:
-   ```bash
-   sudo rockcraft pack --pro=fips-updates
-   ```
+**Building the Image**:
+
+Use the following command to build the image:
+
+```bash
+sudo rockcraft pack --pro=fips-updates
+```
 
 <!-- LINKS -->
 
