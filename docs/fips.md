@@ -6,6 +6,8 @@ requirements. This overview is intended to guide users and developers in
 understanding the compliance status and necessary steps for achieving FIPS mode
 operation.
 
+> **Note:** As of now, pebble is not built in a FIPS-compliant way. This document will be updated once it is.
+
 ## Glossary
 
 This document uses a set of abbreviations and technical concepts which are
@@ -36,8 +38,12 @@ IPsec/WireGuard encryption, TLS termination and inspection, and API
 authentication. FIPS compliance depends on the cryptographic libraries, Go
 runtime, and build environment used for these components.
 
-> **_NOTE:_** As of 2025-07-29, WireGuard has limited FIPS support due to ChaCha20Poly1305
-> algorithm.
+Wireguard is not FIPS-compliant due to its usage of non-certified cryptography algorithms 
+such as `ChaCha20Poly1305`. Usage of this feature would result in a non-FIPS-compliant
+setup of Cilium.
+
+For Canonical Kubernetes, there is no supported path to enable the feature. 
+Therefore, deployments using the default Cilium configurations are FIPS-compliant.
 
 ### Cilium Agent Component
 
@@ -105,26 +111,34 @@ Cilium's FIPS compliance depends on several key components:
 1. **Go Runtime**: Cilium is written in Go and relies on Go's cryptographic
 packages. A modified [Go toolchain from Microsoft] must be used.
 2. **OpenSSL**: Cilium must link against a FIPS-validated OpenSSL
-implementation. Currently, there is no FIPS base for Rocks, so it must be
-sourced, for example, from `core22/fips`.
-3. **Build Environment**: The build process must be performed on a Ubuntu Pro
-machine (details provided below).
+implementation.
+
+**NOTE**: This ROCK is bundled with a FIPS-validated OpenSSL library which is described in the 
+ROCK manifest (refer to this Discourse [post][discourse post]).
+```yaml
+...
+parts:
+  openssl:
+    plugin: nil
+    stage-packages:
+      - openssl-fips-module-3
+      - openssl
+...
+```
 
 ### Required Build Modifications
 
-To build Cilium in FIPS-compliant mode, the following requirements must be met:
+**Prerequisites**:
 
-1. **Prerequisites**:
-   - Ubuntu Pro enabled machine
-   - FIPS **must NOT** be enabled
-   - Rockcraft installed from the `edge/pro-sources` channel (refer to this
-   Discourse [post][discourse post])
+- a `rockcraft` version that allows building with Ubuntu Pro services (refer to [this discourse post]).
 
-2. **Building the Image**:
-  Use the following command to build the image:
-   ```bash
-   sudo rockcraft pack --pro=fips-updates
-   ```
+**Building the Image**:
+
+Use the following command to build the image:
+
+```bash
+sudo rockcraft pack --pro=fips-updates
+```
 
 <!-- LINKS -->
 
