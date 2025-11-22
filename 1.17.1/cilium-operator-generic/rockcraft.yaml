@@ -110,9 +110,10 @@ parts:
     # https://github.com/cilium/cilium/blob/v1.17.1/images/runtime/build-gops.sh#L11-L12
     source-tag: v0.3.27
     build-environment:
-      - CGO_ENABLED: 1
+      - CGO_ENABLED: "1"
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
+      - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
     override-build: |
       go install -ldflags "-s -w" ./...
 
@@ -131,9 +132,17 @@ parts:
     source-type: git
     source: https://github.com/cilium/cilium.git
     source-tag: v1.17.1
+    build-environment:
+     - CGO_ENABLED: "1"
+     - GOTOOLCHAIN: local
+     - GOEXPERIMENT: opensslcrypto
+     - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
     override-build: |
+      # NOTE (mateoflorido): Patch Cilium Makefiles to use FIPS-compatible build flags
+      find . -name "Makefile*" -exec sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' {} \;
+
       export VARIANT="generic"
-      make build-container-operator-$VARIANT
+      make build-container-operator-$VARIANT GO_BUILD_LDFLAGS='-linkmode external'
       export DESTDIR=$CRAFT_PART_INSTALL
       make install-container-binary-operator-$VARIANT
       make licenses-all
