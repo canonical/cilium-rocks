@@ -294,7 +294,7 @@ parts:
       - openssl # now automatically selected from fips-preview
 
   cilium:
-    after: [build-deps, builder-img-deps, wrapper]
+    after: [build-deps, builder-img-deps]
     plugin: make
     source-type: git
     source: https://github.com/cilium/cilium.git
