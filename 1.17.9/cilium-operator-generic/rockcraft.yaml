@@ -91,6 +91,8 @@ parts:
     plugin: go
     source: ""
     override-build: |
+      # NOTE: (mateoflorido) Something is changing the requested version
+      # in the build-snaps section.
       snap refresh go --channel 1.24-fips/stable
       
       go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
@@ -117,6 +119,8 @@ parts:
       - GOEXPERIMENT: opensslcrypto
       - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
     override-build: |
+      # NOTE: (mateoflorido) Something is changing the requested version
+      # in the build-snaps section.
       snap refresh go --channel 1.24-fips/stable
 
       go install -ldflags "-s -w" ./...
@@ -142,6 +146,8 @@ parts:
      - GOEXPERIMENT: opensslcrypto
      - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
     override-build: |
+      # NOTE: (mateoflorido) Something is changing the requested version
+      # in the build-snaps section.
       snap refresh go --channel 1.24-fips/stable
 
       # NOTE (mateoflorido): Patch Cilium Makefiles to use FIPS-compatible build flags
