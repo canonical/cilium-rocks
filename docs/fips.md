@@ -82,7 +82,7 @@ enforcement
 (SDS) or Network Policy Discovery Service (NPDS)
 - **Cryptographic Processing**: TLS handshakes and certificate validation
 
-### Using zig to link against specigic glibc versions
+### Using zig to link against specific glibc versions
 
 The Cilium helm chart, which is used to deploy Cilium on a Kubernetes cluster 
 and utilizes this image, has a few init containers that copy binaries from 
