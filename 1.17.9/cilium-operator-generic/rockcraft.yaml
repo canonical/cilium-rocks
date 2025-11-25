@@ -112,7 +112,7 @@ parts:
     # https://github.com/cilium/cilium/blob/v1.17.9/images/runtime/build-gops.sh#L11-L12
     source-tag: v0.3.27
     build-environment:
-      - CGO_ENABLED: 1
+      - CGO_ENABLED: "1"
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
       - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
