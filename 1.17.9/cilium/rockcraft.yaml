@@ -293,8 +293,25 @@ parts:
       - openssl-fips-module-3 # a Pro only FIPS package for openssl
       - openssl # now automatically selected from fips-preview
 
+  zig:
+    plugin: nil
+    build-packages:
+      - tar
+      - curl
+    override-build: |
+      ARCH=x86_64
+      if [ "$CRAFT_ARCH_BUILD_FOR" = "arm64" ]; then
+        ARCH=aarch64
+      fi
+
+      curl -L https://ziglang.org/builds/zig-$ARCH-linux-0.16.0-dev.1470+32dc46aae.tar.xz -o zig.tar.xz
+      tar --strip-components 1 -xf zig.tar.xz -C .
+
+      mv lib /lib
+      mv zig /usr/bin/  
+  
   cilium:
-    after: [build-deps, builder-img-deps]
+    after: [build-deps, builder-img-deps, zig]
     plugin: make
     source-type: git
     source: https://github.com/cilium/cilium.git
@@ -318,8 +335,6 @@ parts:
       # in the build-snaps section.
       snap refresh go --channel 1.24-fips/stable
       
-      snap install zig --beta --classic
-
       # NOTE (mateoflorido): Patch Cilium Makefiles to use FIPS-compatible build flags
       find . -name "Makefile*" -exec sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' {} \;
 
