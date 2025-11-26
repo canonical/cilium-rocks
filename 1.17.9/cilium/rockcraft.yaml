@@ -308,6 +308,7 @@ parts:
      - GOTOOLCHAIN: local
      - GOEXPERIMENT: opensslcrypto
      - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
+     - GO_BUILD_LDFLAGS: "-linkmode external"
      - PKG_BUILD: "1"
      - NOSTRIP: "0"
      - NOOPT: "0"
@@ -324,7 +325,7 @@ parts:
       find . -name "Makefile*" -exec sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' {} \;
 
       # Note(Reza): The target must match the glibc version corresponding to the oldest supported host.
-      CXX="zig c++ -target ${CRAFT_ARCH_TRIPLET_BUILD_FOR}.2.31" CC="zig cc -target ${CRAFT_ARCH_TRIPLET_BUILD_FOR}.2.31" make build-container GO_BUILD_LDFLAGS='-linkmode external'
+      CXX="zig c++ -target ${CRAFT_ARCH_TRIPLET_BUILD_FOR}.2.31" CC="zig cc -target ${CRAFT_ARCH_TRIPLET_BUILD_FOR}.2.31" make build-container
 
       make install-container-binary
       make install-bash-completion
