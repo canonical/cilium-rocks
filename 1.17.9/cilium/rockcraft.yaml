@@ -304,11 +304,11 @@ parts:
         ARCH=aarch64
       fi
 
-      curl -L https://ziglang.org/builds/zig-$ARCH-linux-0.16.0-dev.1470+32dc46aae.tar.xz -o zig.tar.xz
-      tar --strip-components 1 -xf zig.tar.xz -C .
+      curl -L https://ziglang.org/download/0.15.2/zig-$ARCH-linux-0.15.2.tar.xz -o zig.tar.xz
+      mkdir -p /zig
+      tar --strip-components 1 -xf zig.tar.xz -C /zig
 
-      mv lib /lib
-      mv zig /usr/bin/  
+      ln -sf /zig/zig /usr/bin/zig  
   
   cilium:
     after: [build-deps, builder-img-deps, zig]
