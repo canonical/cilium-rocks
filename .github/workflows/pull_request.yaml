@@ -22,7 +22,7 @@ jobs:
       platform-labels: '{"arm64": ["self-hosted", "linux", "arm64", "jammy", "xlarge"], "amd64": ["self-hosted", "linux", "amd64", "jammy", "xlarge"]}'
       enabled-ubuntu-pro-features: "fips-updates"
       rockcraft-revisions: '{"amd64": "3494", "arm64": "3547"}'
-      build-env: '{"GOPROXY": "https://proxy.golang.org,direct", "GOSUMDB": "sum.golang.org"}'
+      build-env: '{}'
     secrets:
       UBUNTU_PRO_TOKEN: ${{ secrets.UBUNTU_PRO_TOKEN }}
   scan-images:

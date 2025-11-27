@@ -52,6 +52,8 @@ parts:
     source-tag: v1.15.2
     source-subdir: images/builder
     build-environment:
+      - GOPROXY: https://proxy.golang.org,direct
+      - GODEBUG: http2client=0
       - CGO_ENABLED: 0
     override-build: |
       cd $CRAFT_PART_SRC_WORK
@@ -85,6 +87,9 @@ parts:
   protoplugins:
     plugin: go
     source: ""
+    build-environment:
+      - GOPROXY: https://proxy.golang.org,direct
+      - GODEBUG: http2client=0
     override-build: |
       # 8ba23be9613c672d40ae261d2a1335d639bdd59b == tag: cmd/protoc-gen-go-grpc/v1.3.0
       go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@8ba23be9613c672d40ae261d2a1335d639bdd59b
@@ -104,6 +109,8 @@ parts:
     source: https://github.com/google/gops.git
     source-tag: v0.3.27
     build-environment:
+      - GOPROXY: https://proxy.golang.org,direct
+      - GODEBUG: http2client=0
       - CGO_ENABLED: 0
     override-build: |
       go install -ldflags "-s -w" ./...
@@ -114,6 +121,9 @@ parts:
     source-type: git
     source: https://github.com/cilium/cilium.git
     source-tag: v1.15.2
+    build-environment:
+      - GOPROXY: https://proxy.golang.org,direct
+      - GODEBUG: http2client=0
     override-build: |
       export VARIANT="generic"
       make build-container-operator-$VARIANT
@@ -122,3 +132,4 @@ parts:
       make licenses-all
 
       cp $CRAFT_PART_BUILD/LICENSE.all  $CRAFT_PART_INSTALL/
+# Trigger build

@@ -127,6 +127,8 @@ parts:
     source-depth: 1
     source-subdir: images/builder
     build-environment:
+      - GOPROXY: https://proxy.golang.org,direct
+      - GODEBUG: http2client=0
       - CGO_ENABLED: 0
     override-build: |
       cd $CRAFT_PART_SRC_WORK
@@ -199,6 +201,8 @@ parts:
     # NOTE: we maintain our own version of ./iptables-wrapper-installer.sh.
     source: ./iptables-wrapper-installer.sh
     build-environment:
+      - GOPROXY: https://proxy.golang.org,direct
+      - GODEBUG: http2client=0
       - OVERRIDE_PATH: "$CRAFT_PRIME/usr/sbin"
       - OVERRIDE_SBIN: "/usr/sbin"
       - OVERRIDE_ALTSTYLE: "none"
@@ -234,6 +238,8 @@ parts:
       - libc++-17-dev
       - libc++abi-17-dev
     build-environment:
+      - GOPROXY: https://proxy.golang.org,direct
+      - GODEBUG: http2client=0
       - EXTRA_CFLAGS: --static
       - LLVM_CONFIG: "/usr/bin/llvm-config-17"
       - LLVM_STRIP: "/usr/bin/llvm-strip-17"
@@ -259,6 +265,8 @@ parts:
     source-tag: v0.3.27
     source-depth: 1
     build-environment:
+      - GOPROXY: https://proxy.golang.org,direct
+      - GODEBUG: http2client=0
       - CGO_ENABLED: 0
     override-build: |
       go install -ldflags "-s -w" ./...
@@ -310,6 +318,8 @@ parts:
       - clang-17
       - llvm-17
     build-environment:
+      - GOPROXY: https://proxy.golang.org,direct
+      - GODEBUG: http2client=0
       - DISABLE_ENVOY_INSTALLATION: 1
       - PKG_BUILD: 1
       - NOSTRIP: 0
@@ -334,3 +344,4 @@ parts:
     override-prime: |
       craftctl default
       rm -rf /root/.cache/go-build
+# Trigger build

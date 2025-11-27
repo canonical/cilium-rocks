@@ -55,6 +55,8 @@ parts:
     source-tag: v1.17.1
     source-subdir: images/builder
     build-environment:
+      - GOPROXY: https://proxy.golang.org,direct
+      - GODEBUG: http2client=0
       - CGO_ENABLED: 0
     override-build: |
       cd $CRAFT_PART_SRC_WORK
@@ -110,6 +112,8 @@ parts:
     # https://github.com/cilium/cilium/blob/v1.17.1/images/runtime/build-gops.sh#L11-L12
     source-tag: v0.3.27
     build-environment:
+      - GOPROXY: https://proxy.golang.org,direct
+      - GODEBUG: http2client=0
       - CGO_ENABLED: "1"
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
@@ -133,6 +137,8 @@ parts:
     source: https://github.com/cilium/cilium.git
     source-tag: v1.17.1
     build-environment:
+      - GOPROXY: https://proxy.golang.org,direct
+      - GODEBUG: http2client=0
      - CGO_ENABLED: "1"
      - GOTOOLCHAIN: local
      - GOEXPERIMENT: opensslcrypto
@@ -149,3 +155,4 @@ parts:
       make licenses-all
 
       cp $CRAFT_PART_BUILD/LICENSE.all  $CRAFT_PART_INSTALL/
+# Trigger build
