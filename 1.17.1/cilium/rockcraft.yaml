@@ -118,8 +118,9 @@ parts:
   build-deps:
     plugin: nil
     build-snaps:
+      # TODO: Revert back to go 1.23 when this is solved: https://bugs.launchpad.net/go-snap/+bug/2131731
       # https://github.com/cilium/cilium/blob/v1.17.1/images/builder/Dockerfile#L7
-      - go/1.23-fips/stable
+      - go/1.24-fips/stable
     build-packages:
       - autoconf
       - automake
@@ -134,6 +135,10 @@ parts:
   protoplugins:
     plugin: nil
     overlay-script: |
+      # NOTE: (mateoflorido) Something is changing the requested version
+      # in the build-snaps section.
+      snap refresh go --channel 1.24-fips/stable
+
       go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
       go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.5
       go install github.com/mfridman/protoc-gen-go-json@v1.5.0
@@ -229,6 +234,10 @@ parts:
       - GOEXPERIMENT: opensslcrypto
       - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
     override-build: |
+      # NOTE: (mateoflorido) Something is changing the requested version
+      # in the build-snaps section.
+      snap refresh go --channel 1.24-fips/stable
+
       go install -ldflags "-s -w" ./...
 
   # https://github.com/cilium/cilium/blob/v1.17.1/images/runtime/Dockerfile#L24-L26
@@ -247,6 +256,10 @@ parts:
       - GOEXPERIMENT: opensslcrypto
       - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
     override-build: |
+      # NOTE: (mateoflorido) Something is changing the requested version
+      # in the build-snaps section.
+      snap refresh go --channel 1.24-fips/stable
+
       ./build_linux.sh
       strip $CRAFT_PART_BUILD/bin/loopback
       cp -r $CRAFT_PART_BUILD/bin $CRAFT_PART_INSTALL
@@ -265,6 +278,10 @@ parts:
     source-tag: v1.17.1
     source-depth: 1
     override-build: |
+      # NOTE: (mateoflorido) Something is changing the requested version
+      # in the build-snaps section.
+      snap refresh go --channel 1.24-fips/stable
+
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/etc/bash_completion.d
       $CRAFT_PART_INSTALL/usr/local/bin/hubble completion bash > $CRAFT_PART_INSTALL/etc/bash_completion.d/hubble
@@ -314,6 +331,10 @@ parts:
      - NOOPT: 0
     override-build: |
       export DESTDIR=$CRAFT_PART_INSTALL
+
+      # NOTE: (mateoflorido) Something is changing the requested version
+      # in the build-snaps section.
+      snap refresh go --channel 1.24-fips/stable
 
       # NOTE (mateoflorido): Patch Cilium Makefiles to use FIPS-compatible build flags
       find . -name "Makefile*" -exec sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' {} \;

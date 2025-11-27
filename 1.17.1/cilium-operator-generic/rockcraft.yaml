@@ -35,8 +35,9 @@ parts:
   build-deps:
     plugin: nil
     build-snaps:
+      # TODO: Revert back to go 1.23 when this is solved: https://bugs.launchpad.net/go-snap/+bug/2131731
       # https://github.com/cilium/cilium/blob/v1.17.1/images/builder/Dockerfile#L7
-      - go/1.23-fips/stable
+      - go/1.24-fips/stable
     build-packages:
       - autoconf
       - automake
@@ -91,6 +92,8 @@ parts:
     plugin: go
     source: ""
     override-build: |
+      snap refresh go --channel 1.24-fips/stable
+
       go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
       go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.5
       go install github.com/mfridman/protoc-gen-go-json@v1.5.0
@@ -115,6 +118,8 @@ parts:
       - GOEXPERIMENT: opensslcrypto
       - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
     override-build: |
+      snap refresh go --channel 1.24-fips/stable
+
       go install -ldflags "-s -w" ./...
 
   # NOTE(Hue): Inspired from https://discourse.ubuntu.com/t/build-rocks-with-ubuntu-pro-services/57578
@@ -139,6 +144,8 @@ parts:
      - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
      - GO_BUILD_LDFLAGS: "-linkmode external"
     override-build: |
+      snap refresh go --channel 1.24-fips/stable
+
       # NOTE (mateoflorido): Patch Cilium Makefiles to use FIPS-compatible build flags
       find . -name "Makefile*" -exec sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' {} \;
       
