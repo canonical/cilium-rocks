@@ -1,0 +1,67 @@
+#
+# Copyright 2025 Canonical, Ltd.
+#
+
+import shlex
+from functools import cache
+
+import pytest
+from k8s_test_harness.util import docker_util, env_util, fips_util
+from test_util import config, rock
+
+IMAGE_NAME = "cilium"
+IMAGE_BASE = f"ghcr.io/canonical/{IMAGE_NAME}"
+IMAGE_ENTRYPOINT = "cilium-agent --version"
+
+
+@cache
+def get_rockcraft_yaml(image_version):
+    rockcraft_path = config.REPO_PATH / image_version / "cilium" / "rockcraft.yaml"
+    return rockcraft_path.read_text().lower()
+
+
+@pytest.mark.parametrize(
+    "image_version", env_util.image_versions_in_repo(IMAGE_NAME, config.REPO_PATH)
+)
+def test_executable(image_version):
+    rock.run_image(IMAGE_NAME, image_version, IMAGE_ENTRYPOINT, config.IMAGE_ARCH)
+
+
+@pytest.mark.parametrize(
+    "image_version", env_util.image_versions_in_repo(IMAGE_NAME, config.REPO_PATH)
+)
+def test_pebble_executable(image_version):
+    rock.check_pebble(IMAGE_NAME, image_version, config.PEBBLE_VERSION, config.IMAGE_ARCH)
+
+
+@pytest.mark.parametrize("GOFIPS", [0, 1], ids=lambda v: f"GOFIPS={v}")
+@pytest.mark.parametrize(
+    "image_version", env_util.image_versions_in_repo(IMAGE_NAME, config.REPO_PATH)
+)
+def test_fips(image_version, GOFIPS):
+    rockcraft_yaml = get_rockcraft_yaml(image_version)
+
+    # TODO: Remove this once this is solved: https://bugs.launchpad.net/go-snap/+bug/2131731
+    if GOFIPS == 1 and not fips_util.is_fips_rock(rockcraft_yaml):
+        pytest.skip("This version of the ROCK is not built for FIPS")
+
+    image = env_util.get_build_meta_info_for_rock_version(
+        IMAGE_NAME, image_version, config.IMAGE_ARCH
+    ).image
+    entrypoint = shlex.split(IMAGE_ENTRYPOINT)
+
+    docker_env = ["-e", f"GOFIPS={GOFIPS}"]
+    process = docker_util.run_in_docker(
+        image, entrypoint, check_exit_code=False, docker_args=docker_env
+    )
+
+    expected_returncode, expected_error = fips_util.fips_expectations(
+        rockcraft_yaml, GOFIPS
+    )
+
+    assert (
+        process.returncode == expected_returncode
+    ), f"Return code mismatch for {entrypoint} in image {image}, stderr: {process.stderr}"
+    assert (
+        expected_error in process.stderr
+    ), f"Error message mismatch for {entrypoint} in image {image}, stderr: {process.stderr}"
