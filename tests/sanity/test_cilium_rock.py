@@ -3,6 +3,7 @@
 #
 
 import shlex
+from functools import cache
 
 import pytest
 from k8s_test_harness.util import docker_util, env_util, fips_util
@@ -13,16 +14,10 @@ IMAGE_BASE = f"ghcr.io/canonical/{IMAGE_NAME}"
 IMAGE_ENTRYPOINT = "cilium-agent --version"
 
 
-@pytest.fixture
-def skip_if_nonfips(GOFIPS, image_version):
-    rockcraft_yaml = (
-        (config.REPO_PATH / image_version / "cilium" / "rockcraft.yaml")
-        .read_text()
-        .lower()
-    )
-
-    if GOFIPS == 1 and not fips_util.is_fips_rock(rockcraft_yaml):
-        pytest.skip("Skipping because this version of rock is not built for FIPS")
+@cache
+def get_rockcraft_yaml(image_version):
+    rockcraft_path = config.REPO_PATH / image_version / "cilium" / "rockcraft.yaml"
+    return rockcraft_path.read_text().lower()
 
 
 @pytest.mark.parametrize(
@@ -43,17 +38,17 @@ def test_pebble_executable(image_version):
 @pytest.mark.parametrize(
     "image_version", env_util.image_versions_in_repo(IMAGE_NAME, config.REPO_PATH)
 )
-def test_fips(skip_if_nonfips, image_version, GOFIPS):
+def test_fips(image_version, GOFIPS):
+    rockcraft_yaml = get_rockcraft_yaml(image_version)
+
+    # TODO: Remove this once this is solved: https://bugs.launchpad.net/go-snap/+bug/2131731
+    if GOFIPS == 1 and not fips_util.is_fips_rock(rockcraft_yaml):
+        pytest.skip("This version of the ROCK is not built for FIPS")
+
     image = env_util.get_build_meta_info_for_rock_version(
         IMAGE_NAME, image_version, config.IMAGE_ARCH
     ).image
     entrypoint = shlex.split(IMAGE_ENTRYPOINT)
-
-    rockcraft_yaml = (
-        (config.REPO_PATH / image_version / "cilium" / "rockcraft.yaml")
-        .read_text()
-        .lower()
-    )
 
     docker_env = ["-e", f"GOFIPS={GOFIPS}"]
     process = docker_util.run_in_docker(
