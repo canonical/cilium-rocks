@@ -26,7 +26,7 @@ package-repositories:
   - type: apt
     formats: [deb, deb-src]
     components: [main]
-    suites: [llvm-toolchain-jammy-17 llvm-toolchain-jammy-19]
+    suites: [llvm-toolchain-jammy-17, llvm-toolchain-jammy-18]
     key-id: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
     url: http://apt.llvm.org/jammy/
 
@@ -365,10 +365,10 @@ parts:
     override-pull: |
       mkdir -p /tmp/llvm
       cd /tmp/llvm
-      apt-get source -y llvm-toolchain-19
-      cp -r llvm-toolchain-19-*/. $CRAFT_PART_SRC
+      apt-get source -y llvm-toolchain-18
+      cp -r llvm-toolchain-18-*/. $CRAFT_PART_SRC
     override-build: |
-      apt-get build-dep -y llvm-toolchain-19
+      apt-get build-dep -y llvm-toolchain-18
 
       mkdir -p llvm/build-native
       cd llvm/build-native
@@ -377,18 +377,15 @@ parts:
         -DLLVM_TARGETS_TO_BUILD="BPF" \
         -DLLVM_ENABLE_PROJECTS="clang" \
         -DBUILD_SHARED_LIBS="OFF" \
-        -DLLVM_BUILD_STATIC="ON" \
-        -DCMAKE_CXX_FLAGS="-s -flto" \
         -DCMAKE_BUILD_TYPE="Release" \
         -DLLVM_BUILD_RUNTIME="OFF" \
         -DCMAKE_INSTALL_PREFIX="/usr/local"
 
-      ninja clang llc llvm-objcopy llvm-strip
+      ninja clang llc llvm-objcopy
 
       strip bin/clang
       strip bin/llc
       strip bin/llvm-objcopy
-      strip bin/llvm-strip
 
       mkdir -p $CRAFT_PART_INSTALL/usr/local/bin
-      cp bin/clang bin/llc bin/llvm-objcopy bin/llvm-strip $CRAFT_PART_INSTALL/usr/local/bin/
+      cp bin/clang bin/llc bin/llvm-objcopy $CRAFT_PART_INSTALL/usr/local/bin/
