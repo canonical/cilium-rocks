@@ -31,7 +31,7 @@ def test_executable(image_version):
     "image_version", env_util.image_versions_in_repo(IMAGE_NAME, config.REPO_PATH)
 )
 def test_pebble_executable(image_version):
-    rock.check_pebble(IMAGE_NAME, image_version, "v1.18.0", config.IMAGE_ARCH)
+    rock.check_pebble(IMAGE_NAME, image_version, config.PEBBLE_VERSION, config.IMAGE_ARCH)
 
 
 @pytest.mark.parametrize("GOFIPS", [0, 1], ids=lambda v: f"GOFIPS={v}")
