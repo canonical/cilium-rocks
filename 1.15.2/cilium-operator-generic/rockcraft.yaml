@@ -51,6 +51,8 @@ parts:
     source: https://github.com/cilium/cilium.git
     source-tag: v1.15.2
     source-subdir: images/builder
+    # Use GOPROXY with direct fallback and disable HTTP/2 to avoid transient EOF errors
+    # from proxy.golang.org on self-hosted runners
     build-environment:
       - GOPROXY: https://proxy.golang.org,direct
       - GODEBUG: http2client=0
@@ -87,6 +89,8 @@ parts:
   protoplugins:
     plugin: go
     source: ""
+    # Use GOPROXY with direct fallback and disable HTTP/2 to avoid transient EOF errors
+    # from proxy.golang.org on self-hosted runners
     build-environment:
       - GOPROXY: https://proxy.golang.org,direct
       - GODEBUG: http2client=0
@@ -108,6 +112,8 @@ parts:
     source-type: git
     source: https://github.com/google/gops.git
     source-tag: v0.3.27
+    # Use GOPROXY with direct fallback and disable HTTP/2 to avoid transient EOF errors
+    # from proxy.golang.org on self-hosted runners
     build-environment:
       - GOPROXY: https://proxy.golang.org,direct
       - GODEBUG: http2client=0
@@ -121,6 +127,8 @@ parts:
     source-type: git
     source: https://github.com/cilium/cilium.git
     source-tag: v1.15.2
+    # Use GOPROXY with direct fallback and disable HTTP/2 to avoid transient EOF errors
+    # from proxy.golang.org on self-hosted runners
     build-environment:
       - GOPROXY: https://proxy.golang.org,direct
       - GODEBUG: http2client=0
@@ -132,4 +140,3 @@ parts:
       make licenses-all
 
       cp $CRAFT_PART_BUILD/LICENSE.all  $CRAFT_PART_INSTALL/
-# Trigger build

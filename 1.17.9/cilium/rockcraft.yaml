@@ -166,6 +166,8 @@ parts:
     source-type: file
     # NOTE: we maintain out own version of ./iptables-wrapper-installer.sh.
     source: ./iptables-wrapper-installer.sh
+    # Use GOPROXY with direct fallback and disable HTTP/2 to avoid transient EOF errors
+    # from proxy.golang.org on self-hosted runners
     build-environment:
       - GOPROXY: https://proxy.golang.org,direct
       - GODEBUG: http2client=0
@@ -203,6 +205,8 @@ parts:
       - clang-format-17
       - libc++-17-dev
       - libc++abi-17-dev
+    # Use GOPROXY with direct fallback and disable HTTP/2 to avoid transient EOF errors
+    # from proxy.golang.org on self-hosted runners
     build-environment:
       - GOPROXY: https://proxy.golang.org,direct
       - GODEBUG: http2client=0
@@ -230,6 +234,8 @@ parts:
     source: https://github.com/google/gops.git
     source-tag: v0.3.27
     source-depth: 1
+    # Use GOPROXY with direct fallback and disable HTTP/2 to avoid transient EOF errors
+    # from proxy.golang.org on self-hosted runners
     build-environment:
       - GOPROXY: https://proxy.golang.org,direct
       - GODEBUG: http2client=0
@@ -254,6 +260,8 @@ parts:
     source: https://github.com/containernetworking/plugins.git
     source-tag: v1.7.1
     source-depth: 1
+    # Use GOPROXY with direct fallback and disable HTTP/2 to avoid transient EOF errors
+    # from proxy.golang.org on self-hosted runners
     build-environment:
       - GOPROXY: https://proxy.golang.org,direct
       - GODEBUG: http2client=0
@@ -327,6 +335,8 @@ parts:
     build-packages:
       - clang-17
       - llvm-17
+    # Use GOPROXY with direct fallback and disable HTTP/2 to avoid transient EOF errors
+    # from proxy.golang.org on self-hosted runners
     build-environment:
       - GOPROXY: https://proxy.golang.org,direct
       - GODEBUG: http2client=0
@@ -399,4 +409,3 @@ parts:
 
       mkdir -p $CRAFT_PART_INSTALL/usr/local/bin
       cp bin/clang bin/llc $CRAFT_PART_INSTALL/usr/local/bin/
-# Trigger build
