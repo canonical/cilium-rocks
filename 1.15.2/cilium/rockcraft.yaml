@@ -113,10 +113,9 @@ parts:
     source-tag: v1.15.2
     source-depth: 1
     source-subdir: images/builder
-    # Use GOPROXY with direct fallback and disable HTTP/2 to avoid transient EOF errors
+    # Disable HTTP/2 to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GOPROXY: https://proxy.golang.org,direct
       - GODEBUG: http2client=0
       - CGO_ENABLED: 0
     override-build: |
@@ -180,10 +179,9 @@ parts:
     plugin: nil
     source-type: file
     source: ./iptables-wrapper-installer.sh
-    # Use GOPROXY with direct fallback and disable HTTP/2 to avoid transient EOF errors
+    # Disable HTTP/2 to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GOPROXY: https://proxy.golang.org,direct
       - GODEBUG: http2client=0
       - OVERRIDE_PATH: "$CRAFT_PRIME/usr/sbin"
       - OVERRIDE_SBIN: "/usr/sbin"
@@ -213,10 +211,9 @@ parts:
       - clang-format-15
       - libc++-15-dev
       - libc++abi-15-dev
-    # Use GOPROXY with direct fallback and disable HTTP/2 to avoid transient EOF errors
+    # Disable HTTP/2 to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GOPROXY: https://proxy.golang.org,direct
       - GODEBUG: http2client=0
       - EXTRA_CFLAGS: --static
       - LLVM_CONFIG: "/usr/bin/llvm-config-15"
@@ -229,10 +226,9 @@ parts:
     source: https://github.com/google/gops.git
     source-tag: v0.3.27
     source-depth: 1
-    # Use GOPROXY with direct fallback and disable HTTP/2 to avoid transient EOF errors
+    # Disable HTTP/2 to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GOPROXY: https://proxy.golang.org,direct
       - GODEBUG: http2client=0
       - CGO_ENABLED: 0
     override-build: |
@@ -277,10 +273,9 @@ parts:
     stage-packages:
       - clang-15
       - llvm-15
-    # Use GOPROXY with direct fallback and disable HTTP/2 to avoid transient EOF errors
+    # Disable HTTP/2 to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GOPROXY: https://proxy.golang.org,direct
       - GODEBUG: http2client=0
       - DISABLE_ENVOY_INSTALLATION: 1
       - PKG_BUILD: 1
