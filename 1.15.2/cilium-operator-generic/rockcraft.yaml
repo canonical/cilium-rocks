@@ -51,10 +51,9 @@ parts:
     source: https://github.com/cilium/cilium.git
     source-tag: v1.15.2
     source-subdir: images/builder
-    # Disable HTTP/2 and use direct Go module downloads to avoid transient EOF errors
+    # Use direct Go module downloads to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GODEBUG: http2client=0
       - GOPROXY: direct
       - CGO_ENABLED: 0
     override-build: |
@@ -89,10 +88,9 @@ parts:
   protoplugins:
     plugin: go
     source: ""
-    # Disable HTTP/2 and use direct Go module downloads to avoid transient EOF errors
+    # Use direct Go module downloads to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GODEBUG: http2client=0
       - GOPROXY: direct
     override-build: |
       # 8ba23be9613c672d40ae261d2a1335d639bdd59b == tag: cmd/protoc-gen-go-grpc/v1.3.0
@@ -112,10 +110,9 @@ parts:
     source-type: git
     source: https://github.com/google/gops.git
     source-tag: v0.3.27
-    # Disable HTTP/2 and use direct Go module downloads to avoid transient EOF errors
+    # Use direct Go module downloads to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GODEBUG: http2client=0
       - GOPROXY: direct
       - CGO_ENABLED: 0
     override-build: |
@@ -127,10 +124,9 @@ parts:
     source-type: git
     source: https://github.com/cilium/cilium.git
     source-tag: v1.15.2
-    # Disable HTTP/2 and use direct Go module downloads to avoid transient EOF errors
+    # Use direct Go module downloads to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GODEBUG: http2client=0
       - GOPROXY: direct
     override-build: |
       export VARIANT="generic"
