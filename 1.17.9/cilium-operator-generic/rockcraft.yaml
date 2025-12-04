@@ -54,10 +54,7 @@ parts:
     source: https://github.com/cilium/cilium.git
     source-tag: v1.17.9
     source-subdir: images/builder
-    # Use direct Go module downloads to avoid transient EOF errors
-    # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GOPROXY: direct
       - CGO_ENABLED: 0
     override-build: |
       cd $CRAFT_PART_SRC_WORK
@@ -114,10 +111,7 @@ parts:
     source: https://github.com/google/gops.git
     # https://github.com/cilium/cilium/blob/v1.17.9/images/runtime/build-gops.sh#L11-L12
     source-tag: v0.3.27
-    # Use direct Go module downloads to avoid transient EOF errors
-    # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GOPROXY: direct
       - CGO_ENABLED: "1"
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
@@ -142,10 +136,7 @@ parts:
     source-type: git
     source: https://github.com/cilium/cilium.git
     source-tag: v1.17.9
-    # Use direct Go module downloads to avoid transient EOF errors
-    # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GOPROXY: direct
       - CGO_ENABLED: "1"
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto

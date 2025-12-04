@@ -166,10 +166,7 @@ parts:
     source-type: file
     # NOTE: we maintain out own version of ./iptables-wrapper-installer.sh.
     source: ./iptables-wrapper-installer.sh
-    # Use direct Go module downloads to avoid transient EOF errors
-    # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GOPROXY: direct
       - OVERRIDE_PATH: "$CRAFT_PRIME/usr/sbin"
       - OVERRIDE_SBIN: "/usr/sbin"
       - OVERRIDE_ALTSTYLE: "none"
@@ -204,10 +201,7 @@ parts:
       - clang-format-17
       - libc++-17-dev
       - libc++abi-17-dev
-    # Use direct Go module downloads to avoid transient EOF errors
-    # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GOPROXY: direct
       - EXTRA_CFLAGS: --static
       - LLVM_CONFIG: "/usr/bin/llvm-config-17"
       - LLVM_STRIP: "/usr/bin/llvm-strip-17"
@@ -232,10 +226,7 @@ parts:
     source: https://github.com/google/gops.git
     source-tag: v0.3.27
     source-depth: 1
-    # Use direct Go module downloads to avoid transient EOF errors
-    # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GOPROXY: direct
       - CGO_ENABLED: "1"
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
@@ -257,10 +248,7 @@ parts:
     source: https://github.com/containernetworking/plugins.git
     source-tag: v1.7.1
     source-depth: 1
-    # Use direct Go module downloads to avoid transient EOF errors
-    # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GOPROXY: direct
       - CGO_ENABLED: "1"
       - GOTOOLCHAIN: local
       - GOEXPERIMENT: opensslcrypto
@@ -331,10 +319,7 @@ parts:
     build-packages:
       - clang-17
       - llvm-17
-    # Use direct Go module downloads to avoid transient EOF errors
-    # from proxy.golang.org on self-hosted runners
     build-environment:
-      - GOPROXY: direct
       - DISABLE_ENVOY_INSTALLATION: "1"
       - CGO_ENABLED: "1"
       - GOTOOLCHAIN: local
