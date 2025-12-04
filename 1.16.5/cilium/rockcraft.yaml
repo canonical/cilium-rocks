@@ -128,10 +128,11 @@ parts:
     source-tag: v1.16.5
     source-depth: 1
     source-subdir: images/builder
-    # Disable HTTP/2 to avoid transient EOF errors
+    # Disable HTTP/2 and use direct Go module downloads to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
       - GODEBUG: http2client=0
+      - GOPROXY: direct
       - CGO_ENABLED: 0
     override-build: |
       cd $CRAFT_PART_SRC_WORK
@@ -201,10 +202,11 @@ parts:
     source-type: file
     # NOTE: we maintain out own version of ./iptables-wrapper-installer.sh.
     source: ./iptables-wrapper-installer.sh
-    # Disable HTTP/2 to avoid transient EOF errors
+    # Disable HTTP/2 and use direct Go module downloads to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
       - GODEBUG: http2client=0
+      - GOPROXY: direct
       - OVERRIDE_PATH: "$CRAFT_PRIME/usr/sbin"
       - OVERRIDE_SBIN: "/usr/sbin"
       - OVERRIDE_ALTSTYLE: "none"
@@ -239,10 +241,11 @@ parts:
       - clang-format-17
       - libc++-17-dev
       - libc++abi-17-dev
-    # Disable HTTP/2 to avoid transient EOF errors
+    # Disable HTTP/2 and use direct Go module downloads to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
       - GODEBUG: http2client=0
+      - GOPROXY: direct
       - EXTRA_CFLAGS: --static
       - LLVM_CONFIG: "/usr/bin/llvm-config-17"
       - LLVM_STRIP: "/usr/bin/llvm-strip-17"
@@ -266,10 +269,11 @@ parts:
     source: https://github.com/google/gops.git
     source-tag: v0.3.27
     source-depth: 1
-    # Disable HTTP/2 to avoid transient EOF errors
+    # Disable HTTP/2 and use direct Go module downloads to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
       - GODEBUG: http2client=0
+      - GOPROXY: direct
       - CGO_ENABLED: 0
     override-build: |
       go install -ldflags "-s -w" ./...
@@ -318,10 +322,11 @@ parts:
     stage-packages:
       - clang-17
       - llvm-17
-    # Disable HTTP/2 to avoid transient EOF errors
+    # Disable HTTP/2 and use direct Go module downloads to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
       - GODEBUG: http2client=0
+      - GOPROXY: direct
       - DISABLE_ENVOY_INSTALLATION: 1
       - PKG_BUILD: 1
       - NOSTRIP: 0

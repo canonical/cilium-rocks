@@ -51,10 +51,11 @@ parts:
     source: https://github.com/cilium/cilium.git
     source-tag: v1.16.3
     source-subdir: images/builder
-    # Disable HTTP/2 to avoid transient EOF errors
+    # Disable HTTP/2 and use direct Go module downloads to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
       - GODEBUG: http2client=0
+      - GOPROXY: direct
       - CGO_ENABLED: 0
     override-build: |
       cd $CRAFT_PART_SRC_WORK
@@ -105,10 +106,11 @@ parts:
     source-type: git
     source: https://github.com/google/gops.git
     source-tag: v0.3.27
-    # Disable HTTP/2 to avoid transient EOF errors
+    # Disable HTTP/2 and use direct Go module downloads to avoid transient EOF errors
     # from proxy.golang.org on self-hosted runners
     build-environment:
       - GODEBUG: http2client=0
+      - GOPROXY: direct
       - CGO_ENABLED: 0
     override-build: |
       go install -ldflags "-s -w" ./...
