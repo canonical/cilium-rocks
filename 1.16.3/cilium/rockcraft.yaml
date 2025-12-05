@@ -176,9 +176,9 @@ parts:
     source-type: file
     source: ./iptables-wrapper-installer.sh
     build-environment:
-    - OVERRIDE_PATH: "$CRAFT_PRIME/usr/sbin"
-    - OVERRIDE_SBIN: "/usr/sbin"
-    - OVERRIDE_ALTSTYLE: "none"
+      - OVERRIDE_PATH: "$CRAFT_PRIME/usr/sbin"
+      - OVERRIDE_SBIN: "/usr/sbin"
+      - OVERRIDE_ALTSTYLE: "none"
     override-prime: |
       craftctl default
       $CRAFT_PART_BUILD/iptables-wrapper-installer.sh --no-sanity-check
@@ -273,10 +273,10 @@ parts:
       - clang-17
       - llvm-17
     build-environment:
-     - DISABLE_ENVOY_INSTALLATION: 1
-     - PKG_BUILD: 1
-     - NOSTRIP: 0
-     - NOOPT: 0
+      - DISABLE_ENVOY_INSTALLATION: 1
+      - PKG_BUILD: 1
+      - NOSTRIP: 0
+      - NOOPT: 0
     override-build: |
       make build-container
       export DESTDIR=$CRAFT_PART_INSTALL
