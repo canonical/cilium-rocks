@@ -1,6 +1,6 @@
 name: cilium
 summary: Cilium agent rock for the Cilium CNI.
-description: This rock is a drop in replacement for the cilium/cilium image.
+description: This rock is a drop in replacement for the cilium/cilium image. Testing Go caching.
 version: "1.15.2"
 license: Apache-2.0
 
