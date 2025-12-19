@@ -137,11 +137,11 @@ parts:
     source: https://github.com/cilium/cilium.git
     source-tag: v1.17.9
     build-environment:
-     - CGO_ENABLED: "1"
-     - GOTOOLCHAIN: local
-     - GOEXPERIMENT: opensslcrypto
-     - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
-     - GO_BUILD_LDFLAGS: "-linkmode external"
+      - CGO_ENABLED: "1"
+      - GOTOOLCHAIN: local
+      - GOEXPERIMENT: opensslcrypto
+      - GO_TAGS_FLAGS: "linux,cgo,ms_tls13kdf"
+      - GO_BUILD_LDFLAGS: "-linkmode external"
     override-build: |
       snap refresh go --channel 1.24-fips/stable
 
