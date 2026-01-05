@@ -26,7 +26,7 @@ package-repositories:
   - type: apt
     formats: [deb, deb-src]
     components: [main]
-    suites: [llvm-toolchain-jammy-17, llvm-toolchain-jammy-19]
+    suites: [llvm-toolchain-jammy-17, llvm-toolchain-jammy-21]
     key-id: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
     url: http://apt.llvm.org/jammy/
 
@@ -365,10 +365,10 @@ parts:
     override-pull: |
       mkdir -p /tmp/llvm
       cd /tmp/llvm
-      apt-get source -y llvm-toolchain-19
-      cp -r llvm-toolchain-19-*/. $CRAFT_PART_SRC
+      apt-get source -y llvm-toolchain-21
+      cp -r llvm-toolchain-21-*/. $CRAFT_PART_SRC
     override-build: |
-      apt-get build-dep -y llvm-toolchain-19
+      apt-get build-dep -y llvm-toolchain-21
 
       mkdir -p llvm/build
       cd llvm/build
