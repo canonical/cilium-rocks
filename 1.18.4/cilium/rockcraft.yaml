@@ -26,7 +26,7 @@ package-repositories:
   - type: apt
     formats: [deb, deb-src]
     components: [main]
-    suites: [llvm-toolchain-jammy-17, llvm-toolchain-jammy-21]
+    suites: [llvm-toolchain-jammy-17]
     key-id: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
     url: http://apt.llvm.org/jammy/
 
@@ -359,17 +359,35 @@ parts:
   
   llvm:
     plugin: nil
-    build-packages:
-      # Required for `apt-get source`
-      - dpkg-dev
     override-pull: |
+      LLVM_VERSION="llvmorg-19.1.7"
       mkdir -p /tmp/llvm
       cd /tmp/llvm
-      apt-get source -y llvm-toolchain-21
-      cp -r llvm-toolchain-21-*/. $CRAFT_PART_SRC
+      curl -L -o /tmp/llvm.tar.gz https://github.com/llvm/llvm-project/archive/${LLVM_VERSION}.tar.gz 
+      tar -xf /tmp/llvm.tar.gz --strip-components=1 --directory /tmp/llvm
+      cp -r ./. $CRAFT_PART_SRC
+    build-packages:
+    - automake
+    - binutils
+    - bison
+    - build-essential
+    - ca-certificates
+    - cmake
+    - curl
+    - flex
+    - g++
+    - gcc-9
+    - git
+    - libelf-dev
+    - libmnl-dev
+    - libtool
+    - make
+    - ninja-build
+    - pkg-config
+    - python3
+    - python3-pip
+    - unzip
     override-build: |
-      apt-get build-dep -y llvm-toolchain-21
-
       mkdir -p llvm/build
       cd llvm/build
 
