@@ -13,13 +13,13 @@ setup of Cilium.
 For Canonical Kubernetes, there is no supported path to enable the WireGuard feature.
 Therefore, deployments using the default Cilium configurations are FIPS-compliant.
 
-## Using zig to link against specific glibc versions
+## Using Zig to link against specific glibc versions
 
-The Cilium helm chart, which is used to deploy Cilium on a Kubernetes cluster
+The Cilium Helm chart, which is used to deploy Cilium on a Kubernetes cluster
 and utilizes this image, has a few init containers that copy binaries from
-inside the image to the host and run them with the host namespace. Since we
+inside the image to the host and run them within the host namespace. Since we
 are dynamically building these binaries, to make sure they are working on the
-oldest supported host, we are linking against glibc shipped with the oldest
+oldest supported host we are linking against glibc shipped with the oldest
 supported host for each image. The [Zig compiler] allows us to achieve
 that without changing the image base.
 
