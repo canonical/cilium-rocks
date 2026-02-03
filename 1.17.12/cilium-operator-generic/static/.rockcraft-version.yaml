@@ -4,5 +4,4 @@ versions:
   - architecture: arm64
     channel: latest/stable
 
-pro-features: disable
-
+pro-features: disabled
