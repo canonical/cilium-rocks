@@ -77,3 +77,18 @@ def check_pebble(image_name, image_version, pebble_version, arch):
     docker_util.run_entrypoint_and_assert(
         image, "/bin/pebble version", expect_stdout_contains=pebble_version
     )
+
+
+def run_image_direct(image: str, image_version: str, image_entrypoint: str):
+    """Run entrypoint on image directly without version lookup."""
+    docker_util.run_entrypoint_and_assert(
+        image, image_entrypoint, expect_stdout_contains=image_version
+    )
+
+
+def check_pebble_direct(image: str, pebble_version: str = None):
+    """Check pebble on image. If version provided, validate it; otherwise just check pebble runs."""
+    expected = pebble_version if pebble_version else "client"
+    docker_util.run_entrypoint_and_assert(
+        image, "/bin/pebble version", expect_stdout_contains=expected
+    )

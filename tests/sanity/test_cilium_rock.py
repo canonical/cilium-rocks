@@ -18,15 +18,17 @@ def get_cilium_params():
 
 
 @pytest.mark.parametrize("rock_param", get_cilium_params(), ids=rock.rock_param_id)
-def test_executable(image_version):
-    rock.run_image(IMAGE_NAME, image_version, IMAGE_ENTRYPOINT, config.IMAGE_ARCH)
+def test_executable(rock_param: rock.RockTestParam):
+    rock.run_image_direct(rock_param.image, rock_param.version, IMAGE_ENTRYPOINT)
 
 
 @pytest.mark.parametrize("rock_param", get_cilium_params(), ids=rock.rock_param_id)
-def test_pebble_executable(image_version):
-    rock.check_pebble(
-        IMAGE_NAME, image_version, config.PEBBLE_VERSION, config.IMAGE_ARCH
-    )
+def test_pebble_executable(rock_param: rock.RockTestParam):
+    if rock_param.variant == "static":
+        # Static variants use different rockcraft channels with different pebble versions
+        rock.check_pebble_direct(rock_param.image)
+    else:
+        rock.check_pebble_direct(rock_param.image, config.PEBBLE_VERSION)
 
 
 @pytest.mark.parametrize("GOFIPS", [0, 1], ids=lambda v: f"GOFIPS={v}")
