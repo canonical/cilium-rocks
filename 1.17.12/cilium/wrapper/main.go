@@ -2,10 +2,9 @@ package main
 
 import (
 	"embed"
-	_ "embed"
 	"fmt"
 	"os"
-	"os/exec"
+	"syscall"
 )
 
 //go:embed bin/*
@@ -49,28 +48,17 @@ func run() (exitCode int) {
 		return 1
 	}
 
-	// Prepare command with custom environment variables
-	cmd := exec.Command(f.Name(), os.Args[1:]...)
-	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("LD_LIBRARY_PATH=%s", ldLibraryPath),
-		fmt.Sprintf("OPENSSL_MODULES=%s", opensslmodulesPath),
-	)
+	// Set environment variables for the target binary
+	os.Setenv("LD_LIBRARY_PATH", ldLibraryPath)
+	os.Setenv("OPENSSL_MODULES", opensslmodulesPath)
 
-	// Connect stdin/stdout/stderr to this process
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	// Run the binary
-	if err := cmd.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			return exitErr.ProcessState.ExitCode()
-		} else {
-			return 1
-		}
+	// Replace current process with the target binary (execve)
+	if err := syscall.Exec(f.Name(), append([]string{f.Name()}, os.Args[1:]...), os.Environ()); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to exec %s: %v\n", binaryName, err)
+		return 1
 	}
 
+	// unreachable if exec succeeds
 	return 0
 }
 
