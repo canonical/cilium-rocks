@@ -44,17 +44,27 @@ setup of Cilium.
 For Canonical Kubernetes, there is no supported path to enable the WireGuard feature.
 Therefore, deployments using the default Cilium configurations are FIPS-compliant.
 
-## Using Zig to link against specific glibc versions
+## Cilium Wrapper Binary
 
-The Cilium Helm chart is used to deploy Cilium on a Kubernetes cluster and utilizes this Rock.
-It has a few init containers that copy binaries from inside the image to the host and
-run them within the host namespace. Since we are dynamically building these binaries,
-to make sure they are working on the oldest supported host we are linking against
-glibc shipped with the oldest supported host for each image.
-The [Zig compiler] allows us to achieve that without changing the image base.
+The Cilium Helm chart, which is used to deploy Cilium on a Kubernetes cluster
+and utilizes this Rock, has a few init containers that copy binaries from
+inside the image to the host and run them within the host namespace. Since we
+are building these binaries with dynamic linking, to make sure the dependencies
+are always present on the machines, we have linked the binaries against
+libraries from the `core22` snap package using `RPATH` at build time and
+`LD_LIBRARY_PATH` at runtime. We also have modified the binaries to use
+the dynamic linker from `core22` for compatibility.
+
+However, since the OpenSSL shipped with the `core22` snap package is using the
+modules like the FIPS module from the host, this modification doesn't work out
+of the box. To make sure we are using the right FIPS module when calling the
+OpenSSL library, we also provide the FIPS module path shipped with `core22`
+using the `OPENSSL_MODULES` environment variable at runtime.
+
+To provide the runtime environment variables, binaries are embedded inside a
+wrapper binary that provides these values when the binary is executed.
 
 <!-- LINKS -->
 
-[Zig compiler]: https://snapcraft.io/zig
 [IPsec]: https://docs.cilium.io/en/latest/security/network/encryption-ipsec/
 [TLS inspection]: https://docs.cilium.io/en/latest/security/tls-visibility/
