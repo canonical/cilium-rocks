@@ -99,7 +99,7 @@ parts:
       cp proxylib/libcilium.so $CRAFT_PART_INSTALL/usr/lib/
       cp proxylib/libcilium.so /usr/lib/
       git rev-parse HEAD >SOURCE_VERSION
-      make bazel-bin/cilium-envoy
+      BAZEL_BUILD_OPTIONS="--define=wasm=disabled" make bazel-bin/cilium-envoy
       make install
       rm -rf /root/.cache/bazel
 
