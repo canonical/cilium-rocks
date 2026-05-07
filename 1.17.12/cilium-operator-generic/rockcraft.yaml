@@ -148,7 +148,7 @@ parts:
 
       # NOTE (mateoflorido): Patch Cilium Makefiles to use FIPS-compatible build flags
       find . -name "Makefile*" -exec sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' {} \;
-
+      echo "Radio Check"
       export VARIANT="generic"
       make build-container-operator-$VARIANT
       export DESTDIR=$CRAFT_PART_INSTALL
