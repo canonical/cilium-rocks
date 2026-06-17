@@ -26,7 +26,7 @@ package-repositories:
   - type: apt
     formats: [deb, deb-src]
     components: [main]
-    suites: [llvm-toolchain-jammy-17, llvm-toolchain-jammy-18, llvm-toolchain-jammy-19]
+    suites: [llvm-toolchain-jammy-18, llvm-toolchain-jammy-19]
     key-id: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
     url: http://apt.llvm.org/jammy/
 
@@ -219,18 +219,18 @@ parts:
       - libelf-dev
       - libiberty-dev
       - libssl-dev
-      - llvm-17
-      - clang-17
-      - clang-tools-17
-      - lldb-17
-      - lld-17
-      - clang-format-17
-      - libc++-17-dev
-      - libc++abi-17-dev
+      - llvm-18
+      - clang-18
+      - clang-tools-18
+      - lldb-18
+      - lld-18
+      - clang-format-18
+      - libc++-18-dev
+      - libc++abi-18-dev
     build-environment:
       - EXTRA_CFLAGS: --static
-      - LLVM_CONFIG: "/usr/bin/llvm-config-17"
-      - LLVM_STRIP: "/usr/bin/llvm-strip-17"
+      - LLVM_CONFIG: "/usr/bin/llvm-config-18"
+      - LLVM_STRIP: "/usr/bin/llvm-strip-18"
     override-build: |
       # libelf requires zstd on Ubuntu 24.04, this hasn't been addressed
       # in bpftool yet.
@@ -343,8 +343,8 @@ parts:
     source: https://github.com/cilium/cilium.git
     source-tag: v1.19.4
     build-packages:
-      - clang-17
-      - llvm-17
+      - clang-18
+      - llvm-18
     build-environment:
      - DISABLE_ENVOY_INSTALLATION: "1"
      - CGO_ENABLED: "1"
