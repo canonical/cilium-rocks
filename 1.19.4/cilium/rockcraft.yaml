@@ -86,6 +86,7 @@ parts:
       - lldb-17
       - lld-17
       - clang-format-17
+      - llvm-17
       - libc++-17-dev
       - libc++abi-17-dev
     override-build: |
