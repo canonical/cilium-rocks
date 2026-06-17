@@ -116,6 +116,10 @@ parts:
         fi
       done
 
+      # Envoy requires libc++ (not libstdc++) when built with clang.
+      # QUICHE uses constexpr std::vector which only works with libc++.
+      echo "build --cxxopt=-stdlib=libc++ --linkopt=-stdlib=libc++ --host_cxxopt=-stdlib=libc++ --host_linkopt=-stdlib=libc++" >> .bazelrc
+
       make -C proxylib all
       mkdir -p $CRAFT_PART_INSTALL/usr/lib/
       cp proxylib/libcilium.so $CRAFT_PART_INSTALL/usr/lib/
