@@ -192,6 +192,7 @@ parts:
       - zlib1g-dev
       - libelf-dev
       - libiberty-dev
+      - libssl-dev
       - llvm-17
       - clang-17
       - clang-tools-17
