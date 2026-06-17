@@ -90,6 +90,8 @@ parts:
       - libc++-17-dev
       - libc++abi-17-dev
     override-build: |
+      # llvm-17 installs llvm-config-17 but envoy expects unversioned llvm-config
+      ln -sf /usr/bin/llvm-config-17 /usr/local/bin/llvm-config
       export PKG_BUILD=1
       export DESTDIR=$CRAFT_PART_INSTALL
       export EMAIL=root@localhost
