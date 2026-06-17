@@ -107,6 +107,15 @@ parts:
       export EMAIL=root@localhost
       git am --ignore-whitespace $CRAFT_PROJECT_DIR/envoy-fixes.patch
 
+      # Fix: register clang-17 builtin include dir in Bazel toolchain config
+      # Without this, Bazel rejects absolute path includes from clang's resource dir
+      CLANG_RESOURCE_DIR=$(clang -print-resource-dir)
+      for f in $(find . -path "*toolchain*" \( -name "*.bzl" -o -name "BUILD" -o -name "BUILD.bazel" \) 2>/dev/null); do
+        if grep -q "cxx_builtin_include_directories" "$f"; then
+          sed -i "s|cxx_builtin_include_directories = \[|cxx_builtin_include_directories = [\"${CLANG_RESOURCE_DIR}/include\", |" "$f"
+        fi
+      done
+
       make -C proxylib all
       mkdir -p $CRAFT_PART_INSTALL/usr/lib/
       cp proxylib/libcilium.so $CRAFT_PART_INSTALL/usr/lib/
