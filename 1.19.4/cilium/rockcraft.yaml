@@ -120,7 +120,7 @@ parts:
     plugin: nil
     build-snaps:
       # https://github.com/cilium/cilium/blob/v1.19.4/images/builder/Dockerfile#L7
-      - go/1.24-fips/stable
+      - go/1.25-fips/stable
     build-packages:
       - autoconf
       - automake
@@ -137,7 +137,7 @@ parts:
     overlay-script: |
       # NOTE: (mateoflorido) Something is changing the requested version
       # in the build-snaps section.
-      snap refresh go --channel 1.24-fips/stable
+      snap refresh go --channel 1.25-fips/stable
 
       go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.1
       go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
@@ -233,7 +233,7 @@ parts:
     override-build: |
       # NOTE: (mateoflorido) Something is changing the requested version
       # in the build-snaps section.
-      snap refresh go --channel 1.24-fips/stable
+      snap refresh go --channel 1.25-fips/stable
 
       go install -ldflags "-s -w" ./...
 
@@ -255,7 +255,7 @@ parts:
     override-build: |
       # NOTE: (mateoflorido) Something is changing the requested version
       # in the build-snaps section.
-      snap refresh go --channel 1.24-fips/stable
+      snap refresh go --channel 1.25-fips/stable
 
       ./build_linux.sh
       strip $CRAFT_PART_BUILD/bin/loopback
@@ -279,7 +279,7 @@ parts:
     override-build: |
       # NOTE: (mateoflorido) Something is changing the requested version
       # in the build-snaps section.
-      snap refresh go --channel 1.24-fips/stable
+      snap refresh go --channel 1.25-fips/stable
 
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/etc/bash_completion.d
@@ -333,7 +333,7 @@ parts:
 
       # NOTE: (mateoflorido) Something is changing the requested version
       # in the build-snaps section.
-      snap refresh go --channel 1.24-fips/stable
+      snap refresh go --channel 1.25-fips/stable
       
       # NOTE (mateoflorido): Patch Cilium Makefiles to use FIPS-compatible build flags
       find . -name "Makefile*" -exec sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' {} \;
