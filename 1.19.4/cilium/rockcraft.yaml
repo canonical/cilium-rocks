@@ -26,7 +26,7 @@ package-repositories:
   - type: apt
     formats: [deb, deb-src]
     components: [main]
-    suites: [llvm-toolchain-jammy-17, llvm-toolchain-jammy-19]
+    suites: [llvm-toolchain-jammy-17, llvm-toolchain-jammy-18, llvm-toolchain-jammy-19]
     key-id: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
     url: http://apt.llvm.org/jammy/
 
@@ -81,33 +81,33 @@ parts:
       - libc6-dev
       - gcc
       - binutils
-      - clang-17
-      - clang-tools-17
-      - lldb-17
-      - lld-17
-      - clang-format-17
-      - llvm-17
-      - libc++-17-dev
-      - libc++abi-17-dev
+      - clang-18
+      - clang-tools-18
+      - lldb-18
+      - lld-18
+      - clang-format-18
+      - llvm-18
+      - libc++-18-dev
+      - libc++abi-18-dev
     override-build: |
-      # llvm/clang-17 installs versioned binaries; envoy expects unversioned names
-      ln -sf /usr/bin/llvm-config-17 /usr/local/bin/llvm-config
-      ln -sf /usr/bin/clang-17 /usr/bin/clang
-      ln -sf /usr/bin/clang++-17 /usr/bin/clang++
-      ln -sf /usr/bin/lld-17 /usr/bin/lld
-      ln -sf /usr/bin/ld.lld-17 /usr/bin/ld.lld
-      ln -sf /usr/bin/llvm-ar-17 /usr/bin/llvm-ar
-      ln -sf /usr/bin/llvm-nm-17 /usr/bin/llvm-nm
-      ln -sf /usr/bin/llvm-objcopy-17 /usr/bin/llvm-objcopy
-      ln -sf /usr/bin/llvm-objdump-17 /usr/bin/llvm-objdump
-      ln -sf /usr/bin/llvm-readelf-17 /usr/bin/llvm-readelf
-      ln -sf /usr/bin/llvm-strip-17 /usr/bin/llvm-strip
+      # llvm/clang-18 installs versioned binaries; envoy expects unversioned names
+      ln -sf /usr/bin/llvm-config-18 /usr/local/bin/llvm-config
+      ln -sf /usr/bin/clang-18 /usr/bin/clang
+      ln -sf /usr/bin/clang++-18 /usr/bin/clang++
+      ln -sf /usr/bin/lld-18 /usr/bin/lld
+      ln -sf /usr/bin/ld.lld-18 /usr/bin/ld.lld
+      ln -sf /usr/bin/llvm-ar-18 /usr/bin/llvm-ar
+      ln -sf /usr/bin/llvm-nm-18 /usr/bin/llvm-nm
+      ln -sf /usr/bin/llvm-objcopy-18 /usr/bin/llvm-objcopy
+      ln -sf /usr/bin/llvm-objdump-18 /usr/bin/llvm-objdump
+      ln -sf /usr/bin/llvm-readelf-18 /usr/bin/llvm-readelf
+      ln -sf /usr/bin/llvm-strip-18 /usr/bin/llvm-strip
       export PKG_BUILD=1
       export DESTDIR=$CRAFT_PART_INSTALL
       export EMAIL=root@localhost
       git am --ignore-whitespace $CRAFT_PROJECT_DIR/envoy-fixes.patch
 
-      # Fix: register clang-17 builtin include dir in Bazel toolchain config
+      # Fix: register clang-18 builtin include dir in Bazel toolchain config
       # Without this, Bazel rejects absolute path includes from clang's resource dir
       CLANG_RESOURCE_DIR=$(clang -print-resource-dir)
       for f in $(find . -path "*toolchain*" \( -name "*.bzl" -o -name "BUILD" -o -name "BUILD.bazel" \) 2>/dev/null); do
