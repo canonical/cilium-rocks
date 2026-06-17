@@ -118,7 +118,11 @@ parts:
 
       # Envoy requires libc++ (not libstdc++) when built with clang.
       # QUICHE uses constexpr std::vector which only works with libc++.
-      echo "build --cxxopt=-stdlib=libc++ --linkopt=-stdlib=libc++ --host_cxxopt=-stdlib=libc++ --host_linkopt=-stdlib=libc++ --host_linkopt=-L/usr/lib/llvm-18/lib" >> .bazelrc
+      # Add libc++ flags for both target and exec/host platforms.
+      # Bazel may use 'clang' (C frontend) to link exec tools, which ignores -stdlib=libc++,
+      # so we must explicitly pass -lc++ -lc++abi for the host linker.
+      LLVM_LIBDIR=/usr/lib/llvm-18/lib
+      echo "build --cxxopt=-stdlib=libc++ --linkopt=-stdlib=libc++ --host_cxxopt=-stdlib=libc++ --host_linkopt=-stdlib=libc++ --host_linkopt=-L${LLVM_LIBDIR} --host_linkopt=-Wl,-rpath,${LLVM_LIBDIR} --host_linkopt=-lc++ --host_linkopt=-lc++abi" >> .bazelrc
 
       make -C proxylib all
       mkdir -p $CRAFT_PART_INSTALL/usr/lib/
