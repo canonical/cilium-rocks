@@ -54,7 +54,9 @@ parts:
 
   # https://github.com/cilium/proxy/blob/v1.36/Dockerfile#L17-L24
   cilium-envoy:
-    after: [bazelisk]
+    # TEMP(testing): force hubble-completion to build first so its FIPS fix
+    # fails fast before the ~1.5h envoy build. Revert to [bazelisk] before merge.
+    after: [bazelisk, hubble-completion]
     plugin: make
     source-type: git
     source: https://github.com/cilium/proxy.git
