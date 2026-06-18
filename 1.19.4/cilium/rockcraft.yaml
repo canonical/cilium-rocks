@@ -96,6 +96,17 @@ parts:
       # (v1.34 hardcoded /usr/lib/llvm-17). The clang-18 apt packages install the
       # unversioned llvm-config under /usr/lib/llvm-18/bin, so put it on PATH.
       export PATH="/usr/lib/llvm-18/bin:$PATH"
+      # Envoy's bazelrc sets `--incompatible_strict_action_env`, so Bazel's cc
+      # autoconfig resolves CC=clang against a fixed PATH (/usr/local/bin:/usr/bin:
+      # /bin) that excludes /usr/lib/llvm-18/bin, and bakes the absolute compiler
+      # path /usr/bin/clang into the toolchain. The clang-18 apt packages only
+      # provide /usr/bin/clang-18, so compile actions fail with
+      # `execvp(/usr/bin/clang): No such file or directory`. The upstream v1.36
+      # builder image creates these unversioned symlinks itself
+      # (Dockerfile.builder); replicate that here since we install via apt.
+      for tool in clang clang++; do
+        ln -sf /usr/lib/llvm-18/bin/$tool /usr/bin/$tool
+      done
       git am --ignore-whitespace $CRAFT_PROJECT_DIR/envoy-fixes.patch
 
       make -C proxylib all
