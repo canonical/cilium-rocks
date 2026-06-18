@@ -92,6 +92,10 @@ parts:
       export PKG_BUILD=1
       export DESTDIR=$CRAFT_PART_INSTALL
       export EMAIL=root@localhost
+      # cilium/proxy v1.36 derives the LLVM prefix via `llvm-config --prefix`
+      # (v1.34 hardcoded /usr/lib/llvm-17). The clang-18 apt packages install the
+      # unversioned llvm-config under /usr/lib/llvm-18/bin, so put it on PATH.
+      export PATH="/usr/lib/llvm-18/bin:$PATH"
       git am --ignore-whitespace $CRAFT_PROJECT_DIR/envoy-fixes.patch
 
       make -C proxylib all
