@@ -302,10 +302,21 @@ parts:
     # For this reason, only the latest Hubble CLI version is maintained.
     source-tag: v1.19.4
     source-depth: 1
+    build-environment:
+      - CGO_ENABLED: "1"
+      - GOTOOLCHAIN: local
+      - GOEXPERIMENT: opensslcrypto
+      - GO_TAGS: "linux,cgo,ms_tls13kdf"
     override-build: |
       # NOTE: (mateoflorido) Something is changing the requested version
       # in the build-snaps section.
       snap refresh go --channel 1.25-fips/stable
+
+      # NOTE: Patch hubble's Makefile to use FIPS-compatible build flags.
+      # The 1.25-fips Go toolchain's default crypto backend (opensslcrypto)
+      # requires CGO_ENABLED=1; hubble's Makefile hardcodes CGO_ENABLED=0,
+      # which fails with "Using a crypto backend requires CGO_ENABLED=1".
+      find . -name "Makefile*" -exec sed -i 's/CGO_ENABLED=0/CGO_ENABLED=1/g' {} \;
 
       craftctl default
       mkdir -p $CRAFT_PART_INSTALL/etc/bash_completion.d
