@@ -88,6 +88,13 @@ parts:
       - clang-format-18
       - libc++-18-dev
       - libc++abi-18-dev
+      # cilium/proxy v1.36's custom Bazel C++ toolchain (//bazel/toolchains)
+      # builds the whole tree against static libstdc++. Envoy 1.36's bundled
+      # QUICHE uses `static constexpr std::vector` (C++20 P1004), which requires
+      # libstdc++ >= 12; the jammy build-base only ships GCC 11. Upstream builds
+      # on noble (GCC 13), so install g++-12 here and let clang-18 auto-select
+      # the newest GCC for both headers and the static libstdc++.a link.
+      - g++-12
     override-build: |
       export PKG_BUILD=1
       export DESTDIR=$CRAFT_PART_INSTALL
