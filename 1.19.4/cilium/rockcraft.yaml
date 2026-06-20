@@ -177,6 +177,12 @@ parts:
       - ipset
       - kmod
       - ca-certificates
+      # cilium-envoy (built from cilium/proxy v1.36) dynamically links against
+      # libatomic.so.1. Unlike the older v1.34 proxy, v1.36's Envoy does not
+      # statically resolve these atomics, so without libatomic1 the binary fails
+      # at startup with "libatomic.so.1: cannot open shared object file",
+      # crash-looping cilium-envoy and breaking all L7 (gateway/ingress) traffic.
+      - libatomic1
 
   iptables:
     plugin: nil
