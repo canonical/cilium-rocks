@@ -224,18 +224,18 @@ parts:
       - libelf-dev
       - libiberty-dev
       - libssl-dev
-      - llvm-18
-      - clang-18
-      - clang-tools-18
-      - lldb-18
-      - lld-18
-      - clang-format-18
-      - libc++-18-dev
-      - libc++abi-18-dev
+      - llvm-19
+      - clang-19
+      - clang-tools-19
+      - lldb-19
+      - lld-19
+      - clang-format-19
+      - libc++-19-dev
+      - libc++abi-19-dev
     build-environment:
       - EXTRA_CFLAGS: --static
-      - LLVM_CONFIG: "/usr/bin/llvm-config-18"
-      - LLVM_STRIP: "/usr/bin/llvm-strip-18"
+      - LLVM_CONFIG: "/usr/bin/llvm-config-19"
+      - LLVM_STRIP: "/usr/bin/llvm-strip-19"
     override-build: |
       # libelf requires zstd on Ubuntu 24.04, this hasn't been addressed
       # in bpftool yet.
@@ -359,8 +359,8 @@ parts:
     source: https://github.com/cilium/cilium.git
     source-tag: v1.19.4
     build-packages:
-      - clang-18
-      - llvm-18
+      - clang-19
+      - llvm-19
     build-environment:
      - DISABLE_ENVOY_INSTALLATION: "1"
      - CGO_ENABLED: "1"
