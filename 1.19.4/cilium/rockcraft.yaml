@@ -83,6 +83,10 @@ parts:
       - binutils
       - clang-18
       - clang-tools-18
+      # llvm-config (unversioned, under /usr/lib/llvm-18/bin) ships in the
+      # llvm-18 package, NOT clang-18. cilium/proxy v1.36 derives the LLVM
+      # prefix via `llvm-config --prefix`, so llvm-18 is required here.
+      - llvm-18
       - lldb-18
       - lld-18
       - clang-format-18
@@ -100,7 +104,7 @@ parts:
       export DESTDIR=$CRAFT_PART_INSTALL
       export EMAIL=root@localhost
       # cilium/proxy v1.36 derives the LLVM prefix via `llvm-config --prefix`
-      # (v1.34 hardcoded /usr/lib/llvm-17). The clang-18 apt packages install the
+      # (v1.34 hardcoded /usr/lib/llvm-17). The llvm-18 apt package installs the
       # unversioned llvm-config under /usr/lib/llvm-18/bin, so put it on PATH.
       export PATH="/usr/lib/llvm-18/bin:$PATH"
       # Envoy's bazelrc sets `--incompatible_strict_action_env`, so Bazel's cc
