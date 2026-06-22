@@ -224,14 +224,14 @@ parts:
       - libelf-dev
       - libiberty-dev
       - libssl-dev
+      # bpftool only needs the LLVM toolchain (llvm-config/llvm-strip) and clang
+      # to compile, matching upstream image-tools/images/bpftool/Dockerfile. The
+      # debugger/formatter/libc++ packages are unused; in particular lldb-19
+      # cannot co-exist with cilium-envoy's lldb-18 (both pull python3-lldb-XX,
+      # which conflict on the unversioned lldb python module), so keep this set
+      # minimal to avoid breaking apt resolution in the shared build instance.
       - llvm-19
       - clang-19
-      - clang-tools-19
-      - lldb-19
-      - lld-19
-      - clang-format-19
-      - libc++-19-dev
-      - libc++abi-19-dev
     build-environment:
       - EXTRA_CFLAGS: --static
       - LLVM_CONFIG: "/usr/bin/llvm-config-19"
