@@ -1,5 +1,5 @@
 coverage[toml]
-pytest==7.3.1
+pytest==9.0.3
 PyYAML==6.0.1
 tenacity==8.2.3
 k8s-test-harness @   git+https://github.com/canonical/k8s-test-harness@361be19
