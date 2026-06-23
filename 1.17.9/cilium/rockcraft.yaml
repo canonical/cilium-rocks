@@ -94,6 +94,12 @@ parts:
       export EMAIL=root@localhost
       git am --ignore-whitespace $CRAFT_PROJECT_DIR/envoy-fixes.patch
 
+      # cilium/proxy v1.34's go.mod requires Go >= 1.25.0. FIPS Go pins
+      # GOTOOLCHAIN=local, so it won't auto-fetch a newer toolchain like the
+      # non-FIPS snap does. Refresh the global go snap to 1.25-fips just for
+      # the proxylib build; later go parts re-refresh to 1.24-fips themselves.
+      snap refresh go --channel 1.25-fips/stable
+
       make -C proxylib all
       mkdir -p $CRAFT_PART_INSTALL/usr/lib/
       cp proxylib/libcilium.so $CRAFT_PART_INSTALL/usr/lib/
