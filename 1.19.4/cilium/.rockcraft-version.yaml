@@ -1,5 +1,5 @@
 versions:
   - architecture: amd64
-    channel: latest/edge
+    channel: latest/candidate
   - architecture: arm64
-    channel: latest/edge
+    channel: latest/candidate
