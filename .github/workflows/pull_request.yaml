@@ -15,7 +15,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: canonical/k8s-workflows/.github/workflows/build_rocks.yaml@main
+    uses: canonical/k8s-workflows/.github/workflows/build_rocks.yaml@fix-lxd-guest-pro-attach
     with:
       owner: ${{ github.repository_owner }}
       trivy-image-config: "trivy.yaml"
