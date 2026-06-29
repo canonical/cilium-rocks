@@ -117,7 +117,7 @@ parts:
       - CGO_ENABLED: 0
     override-build: |
       cd $CRAFT_PART_SRC_WORK
-      go install github.com/go-delve/delve/cmd/dlv@latest
+      go install github.com/go-delve/delve/cmd/dlv@v1.26.3
       go install -ldflags "-s -w" debug-wrapper.go
 
   protoc:

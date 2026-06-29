@@ -58,7 +58,7 @@ parts:
       - CGO_ENABLED: 1
     override-build: |
       cd $CRAFT_PART_SRC_WORK
-      go install github.com/go-delve/delve/cmd/dlv@latest
+      go install github.com/go-delve/delve/cmd/dlv@v1.26.3
       go install -ldflags "-s -w" debug-wrapper.go
 
   # https://github.com/cilium/cilium/blob/v1.19.4/images/builder/install-protoc.sh
