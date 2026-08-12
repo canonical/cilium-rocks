@@ -41,7 +41,7 @@ services:
     startup: enabled
 
 parts:
-  # https://github.com/cilium/proxy/blob/v1.36/Dockerfile.builder#L83-L87
+  # https://github.com/cilium/proxy/blob/v1.37/Dockerfile.builder#L84-L88
   bazelisk:
     plugin: nil
     build-packages:
@@ -52,13 +52,15 @@ parts:
       chmod +x /usr/bin/bazelisk
       ln -sf /usr/bin/bazelisk /usr/bin/bazel
 
-  # https://github.com/cilium/proxy/blob/v1.36/Dockerfile#L17-L24
+  # https://github.com/cilium/proxy/blob/v1.37/Dockerfile#L17-L24
   cilium-envoy:
     after: [bazelisk]
     plugin: make
     source-type: git
     source: https://github.com/cilium/proxy.git
-    source-tag: v1.36
+    # Cilium v1.20.0 ships cilium-envoy v1.37.5, built from the v1.37 branch.
+    # https://github.com/cilium/cilium/blob/v1.20.0/images/cilium/Dockerfile#L11
+    source-tag: v1.37
     source-depth: 1
     build-packages:
       - autoconf
@@ -84,28 +86,30 @@ parts:
       - clang-18
       - clang-tools-18
       # llvm-config (unversioned, under /usr/lib/llvm-18/bin) ships in the
-      # llvm-18 package, NOT clang-18. cilium/proxy v1.36 derives the LLVM
-      # prefix via `llvm-config --prefix`, so llvm-18 is required here.
+      # llvm-18 package, NOT clang-18. cilium/proxy v1.37 hardcodes
+      # /usr/lib/llvm-18 as the LLVM prefix and its clang.bazelrc target runs
+      # `bazel/setup_clang.sh /usr/lib/llvm-18`, which bails out unless
+      # llvm-config is present there, so llvm-18 is required here.
       - llvm-18
       - lldb-18
       - lld-18
       - clang-format-18
       - libc++-18-dev
       - libc++abi-18-dev
-      # cilium/proxy v1.36's custom Bazel C++ toolchain (//bazel/toolchains)
-      # builds the whole tree against static libstdc++. Envoy 1.36's bundled
-      # QUICHE uses `static constexpr std::vector` (C++20 P1004), which requires
-      # libstdc++ >= 12; the jammy build-base only ships GCC 11. Upstream builds
-      # on noble (GCC 13), so install g++-12 here and let clang-18 auto-select
-      # the newest GCC for both headers and the static libstdc++.a link.
+      # Envoy's bundled QUICHE uses `static constexpr std::vector` (C++20
+      # P1004), which requires libstdc++ >= 12; the jammy build-base only ships
+      # GCC 11. Upstream builds on noble (GCC 13), so install g++-12 here and
+      # let clang-18 auto-select the newest GCC installation for the C++
+      # standard library headers and runtime.
       - g++-12
     override-build: |
       export PKG_BUILD=1
       export DESTDIR=$CRAFT_PART_INSTALL
       export EMAIL=root@localhost
-      # cilium/proxy v1.36 derives the LLVM prefix via `llvm-config --prefix`
-      # (v1.34 hardcoded /usr/lib/llvm-17). The llvm-18 apt package installs the
-      # unversioned llvm-config under /usr/lib/llvm-18/bin, so put it on PATH.
+      # cilium/proxy v1.37 pins the toolchain to /usr/lib/llvm-18 and its
+      # generated clang.bazelrc records the build-time PATH as the Bazel action
+      # env, so put the unversioned LLVM tools (shipped by the apt packages
+      # under /usr/lib/llvm-18/bin) ahead of everything else.
       export PATH="/usr/lib/llvm-18/bin:$PATH"
       # Envoy's bazelrc sets `--incompatible_strict_action_env`, so Bazel's cc
       # autoconfig resolves the toolchain against a fixed PATH (/usr/local/bin:
@@ -113,12 +117,14 @@ parts:
       # paths like /usr/bin/clang and /usr/bin/llvm-ar. The apt packages only
       # provide versioned /usr/bin/<tool>-18, so both compile actions and the
       # rules_foreign_cc host-tool builds (GNU Make: AR=/usr/bin/llvm-ar) fail
-      # with "No such file or directory". Upstream v1.36's Dockerfile.builder
+      # with "No such file or directory". Upstream v1.37's Dockerfile.builder
       # creates these unversioned symlinks itself; replicate that here since we
-      # install via apt.
+      # install via apt. Keep an always-present tool last: the loop's exit
+      # status is the last iteration's test, and the shell runs under `set -e`.
       for tool in clang clang++ clang-cpp lld ld.lld clang-format clang-tidy \
                   run-clang-tidy clang-apply-replacements llvm-ar llvm-nm \
-                  llvm-strip llvm-objcopy llvm-objdump llvm-dwp llvm-cov llvm-config; do
+                  llvm-strip llvm-objcopy llvm-objdump llvm-dwp llvm-cov \
+                  llvm-symbolizer llvm-config; do
         [ -x "/usr/lib/llvm-18/bin/$tool" ] && ln -sf /usr/lib/llvm-18/bin/$tool /usr/bin/$tool
       done
       git am --ignore-whitespace $CRAFT_PROJECT_DIR/envoy-fixes.patch
@@ -309,7 +315,8 @@ parts:
     # NOTE: Hubble has same release versioning scheme as Cilium itself.
     # The Hubble CLI is backward compatible with all supported Cilium releases.
     # For this reason, only the latest Hubble CLI version is maintained.
-    source-tag: v1.20.0
+    # Hubble has not cut a v1.20.0 release yet, so pin the latest one available.
+    source-tag: v1.19.4
     source-depth: 1
     build-environment:
       - CGO_ENABLED: "1"
